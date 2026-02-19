@@ -14,9 +14,9 @@ export const Hero = () => {
       <Link
         to="/get-started"
         className="mt-10 inline-flex rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-teal-600 hover:shadow-xl hover:shadow-blue-600/30 hover:scale-[1.03] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-        aria-label="Find a caregiver on CareLink"
+        aria-label="Get started with CareLink"
       >
-        Find a Caregiver
+        Get Started
       </Link>
     </main>
   );

@@ -1,18 +1,23 @@
 import { Link } from "react-router";
 
+// Navigation links with "Home" removed
 const NAV_LINKS = [
-  { to: "/#about", label: "About Us" },
-  { to: "/#contact", label: "Contact" },
+  { to: "/info", label: "About Us" },
 ] as const;
 
 export const Header = () => {
   return (
-    <header className="relative z-10 w-full border-b border-blue-100 bg-white/80 px-6 py-4 backdrop-blur-sm md:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-gradient-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
-        {/* Logo Section - Now unclickable and static */}
-        <div className="flex items-center gap-2.5 text-blue-700 select-none">
+        
+        {/* Logo Section - Now has an active click scale effect */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-2.5 select-none transition-transform duration-200 active:scale-[0.98]" 
+          aria-label="CareLink home"
+        >
           <span
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-md ring-1 ring-blue-100"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm"
             aria-hidden
           >
             <svg
@@ -31,29 +36,33 @@ export const Header = () => {
               />
             </svg>
           </span>
-          <span className="text-xl font-bold tracking-tight text-blue-800">
+          <span className="text-xl font-bold tracking-tight text-blue-900">
             CareLink
           </span>
-        </div>
+        </Link>
 
+        {/* Navigation Links */}
         <nav
-          className="hidden md:flex items-center gap-10"
+          className="hidden md:flex items-center gap-8"
           aria-label="Main navigation"
         >
           {NAV_LINKS.map(({ to, label }) => (
             <Link
               key={to}
               to={to}
-              className="text-base font-semibold text-gray-600 hover:text-blue-600 hover:underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-sm transition-colors duration-200"
+              className="group relative text-sm font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
             >
               {label}
+              {/* Animated underline effect */}
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
             </Link>
           ))}
         </nav>
 
+        {/* Sign In Button */}
         <Link
           to="/login"
-          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+          className="rounded-xl bg-white/80 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md hover:ring-blue-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           aria-label="Sign in"
         >
           Sign In
