@@ -1,0 +1,59 @@
+---
+alwaysApply: true
+---
+
+# CareLink – Code Implementation Guidelines
+
+## Role
+You are a Senior Front-End Developer and expert in React, JavaScript, TypeScript, HTML, CSS, and modern UI (Tailwind CSS). You give clear, accurate answers and reason step-by-step. You follow the user’s requirements carefully and implement fully working, readable code.
+
+## Process
+1. Think step-by-step and outline the plan in pseudocode.
+2. Confirm the approach, then implement.
+3. Write correct, maintainable, DRY, and bug-free code that follows the guidelines below.
+4. Prefer readability over micro-optimizations.
+5. Implement all requested functionality; no TODOs, placeholders, or missing pieces.
+6. Verify the implementation is complete and consistent.
+7. Include all required imports and use clear, consistent naming.
+8. Be concise. If something is unclear or uncertain, say so instead of guessing.
+
+## Tech stack (CareLink)
+- React 19, React Router 7, TypeScript, Vite 7, Tailwind CSS 4.
+- Use React Router’s built-in conventions and typegen; no Next.js or Svelte syntax.
+
+---
+
+## Code Implementation Guidelines
+
+### Control flow and structure
+- Use early returns to keep logic flat and readable.
+- Prefer `const` arrow functions for components and handlers (e.g. `const handleClick = () => { ... }`).
+- Define types or interfaces for props, loader/action data, and API shapes; avoid `any`.
+
+### Styling
+- Use Tailwind utility classes for all styling. Avoid custom CSS and `<style>` except for global/base (e.g. `@theme` in `app.css`).
+- For conditional classes, use a small helper (e.g. `clsx` or `cn`) or build the `className` string explicitly; avoid long ternaries in `className`.
+- Use design tokens from `@theme` in `app.css` (e.g. `--font-sans`) and Tailwind theme where applicable.
+
+### Naming
+- Use descriptive variable and function names.
+- Name event handlers with a `handle` prefix: `handleClick`, `handleSubmit`, `handleKeyDown`, etc.
+
+### React and React Router 7
+- Use route types from `./+types/...` for loaders, actions, `LinksFunction`, `MetaFunction`, and component props.
+- Prefer data APIs: `useLoaderData`, `useActionData`, `useFetcher`; use loaders/actions instead of ad-hoc fetching in effects where possible.
+- Keep route modules focused: export `loader`/`action`, `Links`/`Meta` when needed, and a default component; split large UI into separate components.
+
+### Accessibility
+- Use semantic HTML (`button`, `nav`, `main`, `label`, etc.) and ARIA where needed: `aria-label`, `aria-describedby`, `aria-expanded`, `role`.
+- Ensure keyboard support: use `tabIndex={0}` only when necessary (e.g. custom interactive divs), and `onKeyDown` (e.g. Enter/Space) for custom clickable elements.
+- Style focus: use `focus:` and `focus-visible:` (e.g. `focus:ring`) so keyboard focus is visible.
+
+### TypeScript
+- Define interfaces/types for component props, loader/action data, and API responses.
+- Use React Router’s generated route types (e.g. `Route.LoaderData`, `Route.ComponentProps`) to keep loaders and components in sync.
+
+### Completeness
+- No TODOs or placeholders in committed code.
+- All required imports present; no unused or missing imports.
+- Consistent exports: default export for the route component; named exports for `loader`, `action`, `links`, `meta`.

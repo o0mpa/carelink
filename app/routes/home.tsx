@@ -1,13 +1,17 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { LandingPage } from "../components/landing/LandingPage";
 
-export function meta({}: Route.MetaArgs) {
+export const meta = ({}: Route.MetaArgs) => {
   return [
-    { title: "CareLink app" },
-    { name: "description", content: "Welcome to CareLink!" },
+    { title: "CareLink – Trusted care for your family" },
+    {
+      name: "description",
+      content:
+        "Connect with verified caregivers for elderly, disabled, and chronically ill loved ones. Match by skills, experience, and location.",
+    },
   ];
-}
+};
 
 export default function Home() {
-  return <Welcome />;
+  return <LandingPage />;
 }
