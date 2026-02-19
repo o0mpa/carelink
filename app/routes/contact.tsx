@@ -43,7 +43,7 @@ return (
                 {/* WhatsApp Icon */}
                 <div
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-500"
-                title="WhatsApp Us"
+                title="message Us"
                 aria-label="message us" 
                 >
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@ return (
                 </svg>
                 </div>
             </div>
-            </div>
+            </div>  
 
             {/* Phone Number 2 */}
             <div className="flex flex-col items-center justify-between gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-blue-100 sm:flex-row">
