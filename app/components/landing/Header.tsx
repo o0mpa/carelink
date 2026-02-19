@@ -17,7 +17,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-linear-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         
-        {/* Left Section: Logo (flex-1 ) */}
+        {/* Left Section*/}
         <div className="flex flex-1 items-center justify-start">
           <Link 
             to="/" 

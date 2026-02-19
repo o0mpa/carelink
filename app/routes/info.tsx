@@ -1,16 +1,21 @@
 import { Link } from "react-router";
+import type { MetaFunction } from "react-router";
 import { Header } from "../components/landing/Header";
 
-export const meta = () => {
+export const meta: MetaFunction = () => {
 return [
     { title: "CareLink - How it Works & Benefits" },
-    { name: "description", content: "Learn about CareLink's caregiver standards, client benefits, and our mission to connect families with trusted care." },
+    {
+    name: "description",
+    content:
+        "Learn about CareLink's caregiver standards, client benefits, and our mission to connect families with trusted care.",
+    },
 ];
 };
 
 export default function Info() {
     return (
-    <div className="h-screen overflow-y-auto bg-gray-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className="h-screen overflow-y-auto bg-gray-50">
     <Header />
     
     <main className="container mx-auto px-6 py-8 md:px-10">
@@ -92,7 +97,7 @@ export default function Info() {
             </div>
 
             <div className="grow space-y-4">
-            <p className="text-sm text-blue-50">
+            <p className="text-sm text-white">
                 We know that trusting someone with your loved one is a big decision. Here is why thousands of families choose CareLink:
             </p>
 
@@ -105,7 +110,7 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Verified Trust</h4>
-                    <p className="text-xs text-blue-100">Every caregiver profile is manually reviewed and vetted by our team.</p>
+                    <p className="text-xs text-white">Every caregiver profile is manually reviewed and vetted by our team.</p>
                 </div>
                 </li>
                 <li className="flex gap-2.5">
@@ -116,7 +121,7 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Smart Matching</h4>
-                    <p className="text-xs text-blue-100">We match you based on medical needs, not just location.</p>
+                    <p className="text-xs text-white">We match you based on medical needs, not just location.</p>
                 </div>
                 </li>
                 <li className="flex gap-2.5">
@@ -127,7 +132,7 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Real-time Updates</h4>
-                    <p className="text-xs text-blue-100">Get updates on task completion directly on your dashboard.</p>
+                    <p className="text-xs text-white">Get updates on task completion directly on your dashboard.</p>
                 </div>
                 </li>
             </ul>
