@@ -9,13 +9,10 @@ export const Header = () => {
   return (
     <header className="relative z-10 w-full border-b border-blue-100 bg-white/80 px-6 py-4 backdrop-blur-sm md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-2.5 text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-sm transition-colors duration-200"
-          aria-label="CareLink home"
-        >
+        {/* Logo Section - Now unclickable and static */}
+        <div className="flex items-center gap-2.5 text-blue-700 select-none">
           <span
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-md ring-1 ring-blue-100 transition-shadow duration-200 hover:shadow-lg hover:ring-blue-200"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white shadow-md ring-1 ring-blue-100"
             aria-hidden
           >
             <svg
@@ -37,7 +34,7 @@ export const Header = () => {
           <span className="text-xl font-bold tracking-tight text-blue-800">
             CareLink
           </span>
-        </Link>
+        </div>
 
         <nav
           className="hidden md:flex items-center gap-10"
