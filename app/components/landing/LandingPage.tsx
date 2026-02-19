@@ -4,7 +4,7 @@ import { Hero } from "./Hero";
 export const LandingPage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-100 via-white to-emerald-100">
-      {/* Layered gradient orbs — more vivid */}
+      {/* Layered gradient orbs —  */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -left-48 -top-48 h-96 w-96 rounded-full bg-blue-400/50 blur-3xl animate-pulse" />
         <div className="absolute right-0 top-1/3 h-[28rem] w-[28rem] rounded-full bg-teal-400/45 blur-3xl" />

@@ -1,16 +1,22 @@
+import { useState } from "react";
 import { Link } from "react-router";
 
-// Navigation links with "Home" removed
 const NAV_LINKS = [
   { to: "/info", label: "About Us" },
 ] as const;
 
 export const Header = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-gradient-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         
-        {/* Logo Section - Now has an active click scale effect */}
+        {/* Logo Section */}
         <Link 
           to="/" 
           className="flex items-center gap-2.5 select-none transition-transform duration-200 active:scale-[0.98]" 
@@ -41,9 +47,9 @@ export const Header = () => {
           </span>
         </Link>
 
-        {/* Navigation Links */}
+        {/* Desktop Navigation Links */}
         <nav
-          className="hidden md:flex items-center gap-8"
+          className="hidden items-center gap-8 md:flex"
           aria-label="Main navigation"
         >
           {NAV_LINKS.map(({ to, label }) => (
@@ -53,21 +59,61 @@ export const Header = () => {
               className="group relative text-sm font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
             >
               {label}
-              {/* Animated underline effect */}
               <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
             </Link>
           ))}
         </nav>
 
-        {/* Sign In Button */}
-        <Link
-          to="/login"
-          className="rounded-xl bg-white/80 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md hover:ring-blue-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Sign in"
-        >
-          Sign In
-        </Link>
+        {/* Right Side: Sign In & Mobile Menu Toggle */}
+        <div className="flex items-center gap-4">
+          <Link
+            to="/login"
+            className="rounded-xl bg-white/80 px-5 py-2.5 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md hover:ring-blue-600 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Sign in"
+          >
+            Sign In
+          </Link>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            type="button"
+            className="flex items-center justify-center rounded-lg p-2 text-blue-900 transition-colors hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 md:hidden"
+            onClick={toggleMobileMenu}
+            aria-expanded={isMobileMenuOpen}
+            aria-label="Toggle navigation menu"
+          >
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <nav className="mt-4 flex flex-col gap-2 border-t border-blue-100/50 pt-4 md:hidden">
+          {NAV_LINKS.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
+              className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 };

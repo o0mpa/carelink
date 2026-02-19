@@ -10,7 +10,7 @@ return [
 
 export default function Info() {
 return (
-    // Added bg-gray-50 for a soft background
+    //bg-gray-50 for a soft background
     <div className="min-h-screen bg-gray-50">
     <Header />
     
@@ -129,7 +129,7 @@ return (
             <div className="mt-8 text-center">
             <Link 
                 to="/get-started" 
-                // Added hover:bg-blue-600 and hover:text-white for the blue hover effect
+                
                 className="inline-block rounded-lg bg-white px-6 py-3 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
             >
                 Find a Caregiver Now
