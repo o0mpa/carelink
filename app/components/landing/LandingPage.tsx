@@ -3,11 +3,11 @@ import { Hero } from "./Hero";
 
 export const LandingPage = () => {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-100 via-white to-emerald-100">
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-blue-100 via-white to-emerald-100">
       {/* Layered gradient orbs —  */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -left-48 -top-48 h-96 w-96 rounded-full bg-blue-400/50 blur-3xl animate-pulse" />
-        <div className="absolute right-0 top-1/3 h-[28rem] w-[28rem] rounded-full bg-teal-400/45 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-112 w-md rounded-full bg-teal-400/45 blur-3xl" />
         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-400/45 blur-3xl" />
         <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-sky-300/40 blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />
         <div className="absolute right-1/4 bottom-1/4 h-56 w-56 rounded-full bg-violet-300/30 blur-3xl" />

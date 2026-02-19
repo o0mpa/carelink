@@ -10,7 +10,6 @@ return [
 
 export default function Info() {
 return (
-    // bg-gray-50 for a soft background
     <div className="min-h-screen bg-gray-50">
     <Header />
     
@@ -41,7 +40,7 @@ return (
             <h2 className="text-2xl font-bold text-gray-900">For Caregivers</h2>
             </div>
 
-            <div className="flex-grow space-y-6">
+            <div className="grow space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-blue-800">Core Rules & Standards</h3>
                 <ul className="mt-3 space-y-2 text-gray-600">
@@ -138,7 +137,6 @@ return (
             <div className="mt-8 text-center">
             <Link 
                 to="/get-started" 
-                // Added hover:bg-blue-600 and hover:text-white for the blue hover effect
                 className="inline-block rounded-lg bg-white px-6 py-3 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
             >
                 Find a Caregiver Now
