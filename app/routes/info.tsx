@@ -74,7 +74,7 @@ return (
         </section>
 
           {/* Section 3: For Families (Benefits) */}
-        <section className="rounded-2xl bg-gradient-to-br from-blue-600 to-teal-600 p-8 text-white shadow-lg">
+        <section className="rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-8 text-white shadow-lg">
             <div className="mb-6 flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -91,7 +91,7 @@ return (
 
             <ul className="space-y-4">
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
@@ -102,7 +102,7 @@ return (
                 </div>
                 </li>
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
@@ -113,7 +113,7 @@ return (
                 </div>
                 </li>
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
