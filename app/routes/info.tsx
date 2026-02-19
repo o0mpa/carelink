@@ -10,7 +10,7 @@ return [
 
 export default function Info() {
 return (
-    //bg-gray-50 for a soft background
+    // bg-gray-50 for a soft background
     <div className="min-h-screen bg-gray-50">
     <Header />
     
@@ -31,7 +31,7 @@ return (
         <div className="grid gap-12 lg:grid-cols-2">
         
           {/* Section 2: For Caregivers (Rules & Skills) */}
-        <section className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <section className="flex flex-col rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
             <div className="mb-6 flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,7 +41,7 @@ return (
             <h2 className="text-2xl font-bold text-gray-900">For Caregivers</h2>
             </div>
 
-            <div className="space-y-6">
+            <div className="flex-grow space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-blue-800">Core Rules & Standards</h3>
                 <ul className="mt-3 space-y-2 text-gray-600">
@@ -71,10 +71,19 @@ return (
                 </div>
             </div>
             </div>
+
+            <div className="mt-8 text-center">
+            <Link 
+                to="/get-started" 
+                className="inline-block rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
+            >
+                Be a Caregiver Now
+            </Link>
+            </div>
         </section>
 
           {/* Section 3: For Families (Benefits) */}
-        <section className="rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-8 text-white shadow-lg">
+        <section className="flex flex-col rounded-2xl bg-gradient-to-br from-blue-600 to-teal-600 p-8 text-white shadow-lg">
             <div className="mb-6 flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,14 +93,14 @@ return (
             <h2 className="text-2xl font-bold">For Families</h2>
             </div>
 
-            <div className="space-y-6">
+            <div className="flex-grow space-y-6">
             <p className="text-blue-50">
                 We know that trusting someone with your loved one is a big decision. Here is why thousands of families choose CareLink:
             </p>
 
             <ul className="space-y-4">
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
@@ -102,7 +111,7 @@ return (
                 </div>
                 </li>
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
@@ -113,7 +122,7 @@ return (
                 </div>
                 </li>
                 <li className="flex gap-3">
-                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
+                <div className="mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
@@ -129,7 +138,7 @@ return (
             <div className="mt-8 text-center">
             <Link 
                 to="/get-started" 
-                
+                // Added hover:bg-blue-600 and hover:text-white for the blue hover effect
                 className="inline-block rounded-lg bg-white px-6 py-3 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
             >
                 Find a Caregiver Now

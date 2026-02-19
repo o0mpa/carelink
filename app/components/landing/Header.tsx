@@ -13,7 +13,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-gradient-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-linear-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         
         {/* Logo Section */}
@@ -23,7 +23,7 @@ export const Header = () => {
           aria-label="CareLink home"
         >
           <span
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm"
             aria-hidden
           >
             <svg
