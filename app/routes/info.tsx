@@ -11,9 +11,9 @@ export function meta() {
 export default function Info() {
     return (
     <div className="h-screen overflow-y-auto bg-gray-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-    <Header />
+        <Header />
     
-    <main className="container mx-auto px-6 py-8 md:px-10">
+        <main className="container mx-auto px-6 py-8 md:px-10">
         
         <section className="mb-10 text-center">
         <h1 className="text-3xl font-extrabold text-blue-900 sm:text-4xl">
@@ -31,16 +31,16 @@ export default function Info() {
           {/* Section 2: For Caregivers */}
         <section className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="mb-4 flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">For Caregivers</h2>
+                <h2 className="text-xl font-bold text-gray-900">For Caregivers</h2>
             </div>
 
             <div className="grow space-y-4">
-            <div>
+                <div>
                 <h3 className="text-base font-semibold text-blue-800">Core Rules & Standards</h3>
                 <ul className="mt-2 space-y-1.5 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
@@ -51,10 +51,10 @@ export default function Info() {
                     <span className="mt-0.5 text-green-500">✔</span>
                     <span><strong>Professionalism:</strong> Punctuality, respect, and strict adherence to the client's care plan are mandatory.</span>
                 </li>
-                    <li className="flex items-start gap-2">
+                <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-green-500">✔</span>
                     <span><strong>Zero Tolerance:</strong> Any report of misconduct or neglect results in immediate suspension pending investigation.</span>
-                    </li>
+                </li>
                 </ul>
             </div>
 
@@ -73,18 +73,18 @@ export default function Info() {
 
             <div className="mt-6 text-center">
             <Link 
-                to="/get-started" 
+                to="/register/caregiver" 
                 className="inline-block rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]"
             >
                 Be a Caregiver Now
             </Link>
             </div>
-        </section>
+            </section>
 
           {/* Section 3: For Families */}
-        <section className="flex flex-col rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-6 text-white shadow-lg">
+            <section className="flex flex-col rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-6 text-white shadow-lg">
             <div className="mb-4 flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
@@ -104,10 +104,10 @@ export default function Info() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <div>
+                    <div>
                     <h4 className="font-bold">Verified Trust</h4>
                     <p className="text-xs text-blue-100">Every caregiver profile is manually reviewed and vetted by our team.</p>
-                </div>
+                    </div>
                 </li>
                 <li className="flex gap-2.5">
                 <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-400 text-blue-900">
@@ -136,7 +136,7 @@ export default function Info() {
             
             <div className="mt-6 text-center">
             <Link 
-                to="/get-started" 
+                to="/register/client" 
                 className="inline-block rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
             >
                 Find a Caregiver Now

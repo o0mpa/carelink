@@ -31,7 +31,7 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Center Section: Navigation Links (Hardcoded directly) */}
+        {/* Center Section: Navigation Links*/}
         <nav className="hidden md:flex items-center justify-center gap-10" aria-label="Main navigation">
           <Link
             to="/info"
@@ -78,7 +78,7 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown (Hardcoded directly) */}
+      {/* Mobile Menu Dropdown*/}
       {isMobileMenuOpen && (
         <nav className="mt-4 flex flex-col gap-2 border-t border-blue-100/50 pt-4 md:hidden">
           <Link
