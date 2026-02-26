@@ -1,11 +1,12 @@
 import { Header } from "./Header";
 import { Hero } from "./Hero";
 
-export const LandingPage = () => {
+export function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-blue-100 via-white to-emerald-100">
-      {/* Layered gradient orbs —  */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      
+      {/* Layered gradient orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div className="absolute -left-48 -top-48 h-96 w-96 rounded-full bg-blue-400/50 blur-3xl animate-pulse" />
         <div className="absolute right-0 top-1/3 h-112 w-md rounded-full bg-teal-400/45 blur-3xl" />
         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-400/45 blur-3xl" />
@@ -18,7 +19,7 @@ export const LandingPage = () => {
       <svg
         className="absolute inset-0 h-full w-full text-blue-200/70"
         xmlns="http://www.w3.org/2000/svg"
-        aria-hidden
+        aria-hidden="true"
       >
         <defs>
           <pattern
@@ -63,7 +64,7 @@ export const LandingPage = () => {
           backgroundImage: `radial-gradient(circle at 1px 1px, rgb(30 64 175 / 0.5) 1px, transparent 0)`,
           backgroundSize: "32px 32px",
         }}
-        aria-hidden
+        aria-hidden="true"
       />
 
       {/* Diagonal color sweep */}
@@ -73,19 +74,21 @@ export const LandingPage = () => {
           background:
             "linear-gradient(135deg, #60a5fa 0%, transparent 40%, #34d399 100%)",
         }}
-        aria-hidden
+        aria-hidden="true"
       />
 
       {/* Soft radial vignette */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_40%,rgb(255_255_255/0.55)_100%)]"
-        aria-hidden
+        aria-hidden="true"
       />
 
+      {/* Main Content (Header & Hero) */}
       <div className="relative flex min-h-screen flex-col">
         <Header />
         <Hero />
       </div>
+      
     </div>
   );
-};
+}

@@ -1,21 +1,16 @@
 import { Link } from "react-router";
-import type { MetaFunction } from "react-router";
 import { Header } from "../components/landing/Header";
 
-export const meta: MetaFunction = () => {
-return [
+export function meta() {
+    return [
     { title: "CareLink - How it Works & Benefits" },
-    {
-    name: "description",
-    content:
-        "Learn about CareLink's caregiver standards, client benefits, and our mission to connect families with trusted care.",
-    },
-];
-};
+    { name: "description", content: "Learn about CareLink's caregiver standards, client benefits, and our mission to connect families with trusted care." },
+    ];
+}
 
 export default function Info() {
     return (
-    <div className="h-screen overflow-y-auto bg-gray-50">
+    <div className="h-screen overflow-y-auto bg-gray-50 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
     <Header />
     
     <main className="container mx-auto px-6 py-8 md:px-10">
@@ -33,7 +28,7 @@ export default function Info() {
 
         <div className="grid gap-8 lg:grid-cols-2">
         
-          {/* Section 2: For Caregivers (Rules & Skills) */}
+          {/* Section 2: For Caregivers */}
         <section className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="mb-4 flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -56,21 +51,22 @@ export default function Info() {
                     <span className="mt-0.5 text-green-500">✔</span>
                     <span><strong>Professionalism:</strong> Punctuality, respect, and strict adherence to the client's care plan are mandatory.</span>
                 </li>
-                <li className="flex items-start gap-2">
+                    <li className="flex items-start gap-2">
                     <span className="mt-0.5 text-green-500">✔</span>
                     <span><strong>Zero Tolerance:</strong> Any report of misconduct or neglect results in immediate suspension pending investigation.</span>
-                </li>
+                    </li>
                 </ul>
             </div>
 
             <div className="border-t border-gray-100 pt-4">
                 <h3 className="text-base font-semibold text-blue-800">Required Skills</h3>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                {["CPR Certified", "Elderly Care", "Mobility", "Medications", "Dementia Care", "First Aid"].map((skill) => (
-                    <span key={skill} className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                    {skill}
-                    </span>
-                ))}
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">CPR Certified</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Elderly Care</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Mobility</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Medications</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">Dementia Care</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">First Aid</span>
                 </div>
             </div>
             </div>
@@ -85,7 +81,7 @@ export default function Info() {
             </div>
         </section>
 
-          {/* Section 3: For Families (Benefits) */}
+          {/* Section 3: For Families */}
         <section className="flex flex-col rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-6 text-white shadow-lg">
             <div className="mb-4 flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
@@ -97,7 +93,7 @@ export default function Info() {
             </div>
 
             <div className="grow space-y-4">
-            <p className="text-sm text-white">
+            <p className="text-sm text-blue-50">
                 We know that trusting someone with your loved one is a big decision. Here is why thousands of families choose CareLink:
             </p>
 
@@ -110,7 +106,7 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Verified Trust</h4>
-                    <p className="text-xs text-white">Every caregiver profile is manually reviewed and vetted by our team.</p>
+                    <p className="text-xs text-blue-100">Every caregiver profile is manually reviewed and vetted by our team.</p>
                 </div>
                 </li>
                 <li className="flex gap-2.5">
@@ -121,7 +117,7 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Smart Matching</h4>
-                    <p className="text-xs text-white">We match you based on medical needs, not just location.</p>
+                    <p className="text-xs text-blue-100">We match you based on medical needs, not just location.</p>
                 </div>
                 </li>
                 <li className="flex gap-2.5">
@@ -132,23 +128,24 @@ export default function Info() {
                 </div>
                 <div>
                     <h4 className="font-bold">Real-time Updates</h4>
-                    <p className="text-xs text-white">Get updates on task completion directly on your dashboard.</p>
+                    <p className="text-xs text-blue-100">Get updates on task completion directly on your dashboard.</p>
                 </div>
                 </li>
             </ul>
             </div>
             
-                        <div className="mt-6 text-center">
-                        <Link 
-                            to="/get-started" 
-                            className="inline-block rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
-                        >
-                            Hire a Caregiver Now
-                        </Link>
-                        </div>
-                    </section>
-                    </div>
-                </main>
-                </div>
-            );
-            }
+            <div className="mt-6 text-center">
+            <Link 
+                to="/get-started" 
+                className="inline-block rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-[0.98]"
+            >
+                Find a Caregiver Now
+            </Link>
+            </div>
+        </section>
+
+        </div>
+    </main>
+    </div>
+    );
+}

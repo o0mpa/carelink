@@ -1,23 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router";
 
-const NAV_LINKS = [
-  { to: "/info", label: "About Us" },
-  { to: "/contact", label: "Contact Us" },
-] as const;
-
-export const Header = () => {
+export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const toggleMobileMenu = () => {
+  function toggleMobileMenu() {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-linear-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         
-        {/* Left Section*/}
+        {/* Left Section: Logo */}
         <div className="flex flex-1 items-center justify-start">
           <Link 
             to="/" 
@@ -36,21 +31,26 @@ export const Header = () => {
           </Link>
         </div>
 
-        {/* Center Section: Navigation Links  */}
+        {/* Center Section: Navigation Links (Hardcoded directly) */}
         <nav className="hidden md:flex items-center justify-center gap-10" aria-label="Main navigation">
-          {NAV_LINKS.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
-            >
-              {label}
-              <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
-            </Link>
-          ))}
+          <Link
+            to="/info"
+            className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
+          >
+            About Us
+            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+          </Link>
+
+          <Link
+            to="/contact"
+            className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
+          >
+            Contact Us
+            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+          </Link>
         </nav>
 
-        {/* Right Section: Sign In & Mobile Menu  */}
+        {/* Right Section: Sign In & Mobile Menu */}
         <div className="flex flex-1 items-center justify-end gap-4">
           <Link
             to="/login"
@@ -78,21 +78,25 @@ export const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Dropdown (Hardcoded directly) */}
       {isMobileMenuOpen && (
         <nav className="mt-4 flex flex-col gap-2 border-t border-blue-100/50 pt-4 md:hidden">
-          {NAV_LINKS.map(({ to, label }) => (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
-            >
-              {label}
-            </Link>
-          ))}
+          <Link
+            to="/info"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+          >
+            About Us
+          </Link>
+          <Link
+            to="/contact"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+          >
+            Contact Us
+          </Link>
         </nav>
       )}
     </header>
   );
-};
+}
