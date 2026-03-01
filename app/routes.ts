@@ -7,4 +7,5 @@ export default [
     route("get-started", "routes/get-started.tsx"),
     route("register/client", "routes/register-client.tsx"),
     route("register/caregiver", "routes/register-caregiver.tsx"),
+    route("login", "routes/login.tsx"),
 ] satisfies RouteConfig;

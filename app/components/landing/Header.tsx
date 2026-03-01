@@ -78,7 +78,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown*/}
       {isMobileMenuOpen && (
         <nav className="mt-4 flex flex-col gap-2 border-t border-blue-100/50 pt-4 md:hidden">
           <Link
