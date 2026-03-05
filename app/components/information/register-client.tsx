@@ -38,7 +38,7 @@ export default function RegisterClient() {
 
             <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
             
-            {/*  Account Information  */}
+            {/* Account Information */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Account Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -70,7 +70,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/*  Personal Information  */}
+            {/* Personal Information */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Personal Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -120,7 +120,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/*  Location  */}
+            {/* Location */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Location</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -172,7 +172,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/*  Medical Details & Documents  */}
+            {/* Medical Details & Documents */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Medical Details & Documents</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

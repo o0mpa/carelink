@@ -28,7 +28,7 @@ export default function Info() {
 
         <div className="grid gap-8 lg:grid-cols-2">
         
-          {/* Section 1: Caregivers */}
+          {/* Caregivers */}
         <section className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="mb-4 flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
@@ -81,7 +81,7 @@ export default function Info() {
             </div>
             </section>
 
-          {/* Section 2: clients */}
+          {/* clients */}
             <section className="flex flex-col rounded-2xl bg-linear-to-br from-blue-600 to-teal-600 p-6 text-white shadow-lg">
             <div className="mb-4 flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">

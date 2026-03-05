@@ -109,7 +109,7 @@ export default function RegisterCaregiver() {
                 </div>
             </section>
 
-            {/*  Location  */}
+            {/* Location */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Location</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

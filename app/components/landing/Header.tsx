@@ -12,7 +12,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-linear-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         
-        {/* Left Section: Logo */}
+        {/* Logo */}
         <div className="flex flex-1 items-center justify-start">
           <Link 
             to="/" 
@@ -31,7 +31,7 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Center Section: Navigation Links*/}
+        {/* Navigation Links*/}
         <nav className="hidden md:flex items-center justify-center gap-10" aria-label="Main navigation">
           <Link
             to="/info"
@@ -50,7 +50,7 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* Right Section: Sign In & Mobile Menu */}
+        {/* Sign In & Mobile Menu */}
         <div className="flex flex-1 items-center justify-end gap-4">
           <Link
             to="/login"

@@ -22,7 +22,7 @@ export default function GetStarted() {
 
         <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
         
-          {/* Option 1: Family/Client Selection Card */}
+          {/* Option 1:Client Selection */}
             <Link
             to="/register/client"
             className="group flex flex-col items-center rounded-3xl bg-white/90 backdrop-blur-sm p-10 shadow-lg ring-2 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:ring-blue-400 active:scale-[0.98]"
@@ -41,7 +41,7 @@ export default function GetStarted() {
             </span>
             </Link>
 
-          {/* Option 2: Caregiver Selection Card */}
+          {/* Option 2: Caregiver Selection */}
             <Link
             to="/register/caregiver"
             className="group flex flex-col items-center rounded-3xl bg-white/90 backdrop-blur-sm p-10 shadow-lg ring-2 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:ring-emerald-400 active:scale-[0.98]"
