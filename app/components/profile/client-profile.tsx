@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, Form } from "react-router";
 
 export function meta() {
     return [
@@ -12,7 +12,7 @@ export default function ClientProfile() {
     const [activeTab, setActiveTab] = useState<"personal" | "care">("personal");
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
+    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
         
         <main className="container mx-auto px-4 py-10 sm:px-6 md:px-10">
         <div className="mx-auto max-w-5xl">
@@ -26,14 +26,16 @@ export default function ClientProfile() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 
-                {/* Upload Photo  */}
-                <label className="absolute bottom-0 right-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-blue-600 shadow-md ring-2 ring-blue-100 transition-colors hover:bg-gray-50 hover:text-blue-800" title="Upload Profile Picture">
+                {/* Profile Picture Form */}
+                <Form method="post" encType="multipart/form-data">
+                    <label className="absolute bottom-0 right-0 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white text-blue-600 shadow-md ring-2 ring-blue-100 transition-colors hover:bg-gray-50 hover:text-blue-800" title="Upload Profile Picture">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2-2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <input type="file" accept="image/*" className="hidden" />
-                </label>
+                    <input type="file" name="profile_picture" accept="image/*" className="hidden" onChange={(e) => e.target.form?.requestSubmit()} />
+                    </label>
+                </Form>
                 </div>
 
                 <div className="text-center sm:text-left">
@@ -45,17 +47,19 @@ export default function ClientProfile() {
                 </div>
             </div>
             
-            {/* Edit & Logout */}
             <div className="mt-6 flex gap-3 sm:mt-0">
                 <button className="rounded-xl border-2 border-blue-600 bg-transparent px-5 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]">
                 Edit Profile
                 </button>
-                <Link 
-                to="/login" 
-                className="flex items-center justify-center rounded-xl border-2 border-red-500 bg-transparent px-5 py-2.5 text-sm font-bold text-red-500 transition-all hover:bg-red-50 active:scale-[0.98]"
+                
+                <Form method="post" action="/logout">
+                <button 
+                    type="submit"
+                    className="flex w-full items-center justify-center rounded-xl border-2 border-red-500 bg-transparent px-5 py-2.5 text-sm font-bold text-red-500 transition-all hover:bg-red-50 active:scale-[0.98]"
                 >
-                Logout
-                </Link>
+                    Logout
+                </button>
+                </Form>
             </div>
             </div>
 
@@ -180,10 +184,8 @@ export default function ClientProfile() {
                     <p className="mt-1 text-sm text-gray-900"><span className="font-semibold">Phone:</span> Phone Number</p>
                     </div>
                 </div>
-
                 </div>
             )}
-
             </div>
         </div>
         </main>
