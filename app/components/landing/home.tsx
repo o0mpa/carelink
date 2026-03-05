@@ -1,7 +1,6 @@
-import type { Route } from "./+types/home";
-import { LandingPage } from "../components/landing/LandingPage";
+import { LandingPage } from "./LandingPage";
 
-export const meta = ({}: Route.MetaArgs) => {
+export const meta = () => {
   return [
     { title: "CareLink – Trusted care for your family" },
     {

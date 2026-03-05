@@ -1,4 +1,4 @@
-import { Header } from "../components/landing/Header";
+import { Header } from "./Header";
 
 export function meta() {
     return [
