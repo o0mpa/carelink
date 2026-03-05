@@ -4,8 +4,10 @@ export default [
     index("routes/home.tsx"),
     route("info", "routes/info.tsx"),
     route("contact", "routes/contact.tsx"),
-    route("get-started", "routes/get-started.tsx"),
-    route("register/client", "routes/register-client.tsx"),
-    route("register/caregiver", "routes/register-caregiver.tsx"),
-    route("login", "routes/login.tsx"),
+
+    route("get-started", "components/information/get-started.tsx"),
+    route("register/client", "components/information/register-client.tsx"),
+    route("register/caregiver", "components/information/register-caregiver.tsx"),
+    route("login", "components/information/login.tsx"),
+
 ] satisfies RouteConfig;

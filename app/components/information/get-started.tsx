@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Header } from "../components/landing/Header";
+import { Header } from "../landing/Header";
 
 export function meta() {
     return [
@@ -10,26 +10,24 @@ export function meta() {
 
 export default function GetStarted() {
     return (
-    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
-    <Header />
-    
-    <main className="container mx-auto px-6 py-16 text-center md:px-10">
+        <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
+            <Header /> 
+        <main className="container mx-auto px-6 py-16 text-center md:px-10">
         <h1 className="text-4xl font-extrabold text-blue-900 sm:text-5xl drop-shadow-sm">
-        Join CareLink
+            Join CareLink
         </h1>
         <p className="mt-4 text-lg font-medium text-gray-600">
-        Please select how you would like to use our platform today.
+            Please select how you would like to use our platform today.
         </p>
 
         <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
         
-          {/* Client Selection Card */}
-        <Link
+          {/* Option 1: Family/Client Selection Card */}
+            <Link
             to="/register/client"
             className="group flex flex-col items-center rounded-3xl bg-white/90 backdrop-blur-sm p-10 shadow-lg ring-2 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:ring-blue-400 active:scale-[0.98]"
-        >
+            >
             <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-blue-50 text-blue-600 shadow-inner transition-colors duration-300 group-hover:bg-blue-600 group-hover:text-white">
-
                 <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
@@ -43,7 +41,7 @@ export default function GetStarted() {
             </span>
             </Link>
 
-          {/* Caregiver Selection Card */}
+          {/* Option 2: Caregiver Selection Card */}
             <Link
             to="/register/caregiver"
             className="group flex flex-col items-center rounded-3xl bg-white/90 backdrop-blur-sm p-10 shadow-lg ring-2 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:ring-emerald-400 active:scale-[0.98]"
@@ -58,11 +56,11 @@ export default function GetStarted() {
                 I am a professional caregiver looking to offer my services, manage my schedule, and connect with families in need.
             </p>
             <span className="mt-8 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-5 py-2.5 text-sm font-bold text-emerald-700 transition-colors duration-300 group-hover:bg-emerald-600 group-hover:text-white">
-            Continue as Caregiver <span>→</span>
+                Continue as Caregiver <span>→</span>
             </span>
-        </Link>
+                </Link>
 
-        </div>
+            </div>
         </main>
     </div>
     );
