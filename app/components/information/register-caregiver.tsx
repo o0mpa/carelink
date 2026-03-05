@@ -25,7 +25,7 @@ export default function RegisterCaregiver() {
 
             <form className="flex flex-col gap-8">
             
-            {/* Account Information */}
+            {/*  Account Information  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Account Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -42,15 +42,16 @@ export default function RegisterCaregiver() {
                     <input 
                     type="password" 
                     required 
+                    minLength={8}
                     pattern=".*[A-Z].*" 
-                    title="Password must contain at least one uppercase letter."
-                    placeholder="Must contain a Capital letter"
+                    title="Password must be at least 8 characters long and contain at least one uppercase letter."
+                    placeholder="Min 8 chars, 1 Capital"
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
                     />
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
-                    <input type="password" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="password" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 </div>
             </section>
@@ -73,13 +74,14 @@ export default function RegisterCaregiver() {
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                    <input type="date" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="date" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
                     <input 
                     type="number" 
                     min="0"
+                    max="100"
                     required
                     onKeyDown={(e) => {
                         if (e.key === '-' || e.key === 'e' || e.key === '+' || e.key === '.') {
@@ -94,8 +96,9 @@ export default function RegisterCaregiver() {
                     <input 
                     type="tel" 
                     required
+                    maxLength={11}
                     onInput={(e) => {
-                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 11);
                     }}
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
                     />
@@ -155,8 +158,8 @@ export default function RegisterCaregiver() {
 
             {/*  Skills & Experience  */}
             <section>
-            <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Skills & Experience</h2>
-            <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
+                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Skills & Experience</h2>
+                <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="h-4 w-4 rounded border-2 border-gray-400 accent-emerald-600 focus:ring-emerald-500" /> Physical care</label>
                     <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" className="h-4 w-4 rounded border-2 border-gray-400 accent-emerald-600 focus:ring-emerald-500" /> Medication management</label>
@@ -173,7 +176,7 @@ export default function RegisterCaregiver() {
                 </div>
             </section>
 
-            {/*  Document Uploads */}
+            {/*  Document Uploads  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Verification Documents</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4">
@@ -200,57 +203,96 @@ export default function RegisterCaregiver() {
                 </div>
             </section>
 
-            {/*  Rate Settings  */}
+            {/*  Salary Settings  */}
             <section>
-                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Accepted Rates Per Day Category</h2>
+                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Accepted salaries Per Day</h2>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Category A (3h)</label>
                     <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-500 font-semibold">E£</span>
-                    <input type="number" min="0" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                        type="number" 
+                        min="0" 
+                        max="500"
+                        required 
+                        placeholder="0.00" 
+                        onInput={(e) => {
+                        if (Number(e.currentTarget.value) > 500) e.currentTarget.value = '500';
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                     </div>
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Category B (6h)</label>
                     <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-500 font-semibold">E£</span>
-                    <input type="number" min="0" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                        type="number" 
+                        min="0" 
+                        max="500"
+                        required 
+                        placeholder="0.00" 
+                        onInput={(e) => {
+                        if (Number(e.currentTarget.value) > 500) e.currentTarget.value = '500';
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                     </div>
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Category C (9h)</label>
                     <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-500 font-semibold">E£</span>
-                    <input type="number" min="0" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                        type="number" 
+                        min="0" 
+                        max="500"
+                        required 
+                        placeholder="0.00" 
+                        onInput={(e) => {
+                        if (Number(e.currentTarget.value) > 500) e.currentTarget.value = '500';
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                     </div>
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Category D (12h)</label>
                     <div className="relative">
                     <span className="absolute left-3 top-2.5 text-gray-500 font-semibold">E£</span>
-                    <input type="number" min="0" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                        type="number" 
+                        min="0" 
+                        max="500"
+                        required 
+                        placeholder="0.00" 
+                        onInput={(e) => {
+                        if (Number(e.currentTarget.value) > 500) e.currentTarget.value = '500';
+                        }}
+                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                     </div>
                 </div>
                 </div>
             </section>
 
-            {/* Submit Button */}
             <button type="submit" className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]">
                 Submit Application
             </button>
-        </form>
+            </form>
 
-        <div className="mt-8 flex flex-col items-center gap-2 text-sm text-gray-600">
+            <div className="mt-8 flex flex-col items-center gap-2 text-sm text-gray-600">
             <div>
                 Already have an account?{" "}
-            <Link to="/login" className="font-semibold text-emerald-600 transition-colors hover:text-emerald-800 hover:underline">Sign In</Link>
+                <Link to="/login" className="font-semibold text-emerald-600 transition-colors hover:text-emerald-800 hover:underline">Sign In</Link>
             </div>
             <Link to="/" className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline">← Back to Home</Link>
+            </div>
+            
         </div>
-        
-        </div>
-    </main>
+        </main>
     </div>
     );
 }

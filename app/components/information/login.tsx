@@ -40,6 +40,7 @@ export default function Login() {
                     name="password"
                     type="password"
                     required
+                    minLength={8}
                     className="mt-2 block w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
                   />
                 </div>
@@ -50,9 +51,10 @@ export default function Login() {
                   </Link>
                 </div>
                 
+                {/* Changed back to a submit button for backend integration */}
                 <button
                   type="submit"
-                  className="w-full cursor-pointer rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   Sign In
                 </button>

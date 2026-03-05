@@ -10,12 +10,26 @@ export function meta() {
 
 export default function RegisterClient() {
     const [selectedCity, setSelectedCity] = useState("");
+    
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+
+    const handleAllergyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    if (checked) {
+        setSelectedAllergies((prev) => [...prev, value]);
+    } else {
+        setSelectedAllergies((prev) => prev.filter((item) => item !== value));
+    }
+    };
+
+    const isNoneSelected = selectedAllergies.includes("none");
+    const hasOtherAllergies = selectedAllergies.some((a) => a !== "none");
 
     return (
-    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
+        <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
         <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-        
+            
             <h1 className="mb-2 text-center text-3xl font-extrabold text-blue-900">
             Client Registration
             </h1>
@@ -25,7 +39,7 @@ export default function RegisterClient() {
 
             <form className="flex flex-col gap-8">
             
-            {/*  Account Information  */}
+            {/* Account Information */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Account Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -42,15 +56,16 @@ export default function RegisterClient() {
                     <input 
                     type="password" 
                     required 
+                    minLength={8}
                     pattern=".*[A-Z].*" 
-                    title="Password must contain at least one uppercase letter."
-                    placeholder="Must contain a Capital letter"
+                    title="Password must be at least 8 characters long and contain at least one uppercase letter."
+                    placeholder="Min 8 chars, 1 Capital"
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                     />
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
-                    <input type="password" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="password" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 </div>
             </section>
@@ -73,13 +88,14 @@ export default function RegisterClient() {
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                    <input type="date" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input type="date" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
                     <input 
                     type="number" 
                     min="0"
+                    max="100"
                     required
                     onKeyDown={(e) => {
                         if (e.key === '-' || e.key === 'e' || e.key === '+' || e.key === '.') {
@@ -94,8 +110,9 @@ export default function RegisterClient() {
                     <input 
                     type="tel" 
                     required
+                    maxLength={11}
                     onInput={(e) => {
-                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 11);
                     }}
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                     />
@@ -170,23 +187,58 @@ export default function RegisterClient() {
                     <option value="O-">O-</option>
                     </select>
                 </div>
-                <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Allergies</label>
-                    <select required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select Allergies</option>
-                    <option value="none">None</option>
-                    <option value="food">Food Allergies</option>
-                    <option value="medication">Medication</option>
-                    <option value="environmental">Environmental</option>
-                    </select>
-                </div>
+                
                 <div className="md:col-span-2">
+                    <label className="mb-1 block text-sm font-semibold text-gray-700">Allergies</label>
+                    <div className="flex min-h-11 w-full flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border-2 border-gray-300 bg-white px-4 py-3">
+                    
+                    <label className={`flex cursor-pointer items-center gap-2 text-sm transition-opacity ${hasOtherAllergies ? "text-gray-400 opacity-60" : "text-gray-900 font-semibold"}`}>
+                        <input 
+                        type="checkbox" 
+                        value="none" 
+                        checked={isNoneSelected}
+                        onChange={handleAllergyChange}
+                        disabled={hasOtherAllergies}
+                        className="h-4 w-4 rounded border-2 border-gray-400 accent-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed" 
+                        />
+                        None
+                    </label>
+
+                    {[
+                        { id: "food", label: "Food" },
+                        { id: "medication", label: "Medication" },
+                        { id: "environmental", label: "Environmental" },
+                        { id: "pets", label: "Pets / Dander" },
+                        { id: "latex", label: "Latex" },
+                        { id: "insects", label: "Insect Stings" },
+                        { id: "pollen", label: "Pollen" },
+                        { id: "dust", label: "Dust Mites" },
+                    ].map((allergy) => (
+                        <label 
+                        key={allergy.id} 
+                        className={`flex cursor-pointer items-center gap-2 text-sm transition-opacity ${isNoneSelected ? "text-gray-400 opacity-60" : "text-gray-900"}`}
+                        >
+                        <input 
+                            type="checkbox" 
+                            value={allergy.id}
+                            checked={selectedAllergies.includes(allergy.id)}
+                            onChange={handleAllergyChange}
+                            disabled={isNoneSelected}
+                            className="h-4 w-4 rounded border-2 border-gray-400 accent-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed" 
+                        />
+                        {allergy.label}
+                        </label>
+                    ))}
+
+                    </div>
+                </div>
+
+                <div className="md:col-span-2 mt-2">
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Doctor / Medical Facility Supervising (Optional)</label>
                     <input type="text" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 
-                {/* File Uploads */}
-                <div className="md:col-span-2 mt-4 rounded-xl border-2 border-blue-200 bg-blue-50/30 p-4">
+                <div className="md:col-span-2 mt-2 rounded-xl border-2 border-blue-200 bg-blue-50/30 p-4">
                     <h3 className="mb-3 font-semibold text-blue-900">Document Uploads</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div>
@@ -206,7 +258,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/*  Skills Needed  */}
+            {/* Skills Needed */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Skills Needed</h2>
                 <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
@@ -226,7 +278,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/*  Emergency Contacts  */}
+            {/* Emergency Contacts */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Emergency Contacts</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -241,8 +293,9 @@ export default function RegisterClient() {
                     <input 
                         type="tel" 
                         required
+                        maxLength={11}
                         onInput={(e) => {
-                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 11);
                         }}
                         className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                     />
@@ -259,8 +312,9 @@ export default function RegisterClient() {
                     <input 
                         type="tel" 
                         required
+                        maxLength={11}
                         onInput={(e) => {
-                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '').slice(0, 11);
                         }}
                         className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" 
                     />
@@ -269,7 +323,6 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/* Submit Button */}
             <button type="submit" className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow-md active:scale-[0.98]">
                 Complete Registration
             </button>
@@ -283,7 +336,7 @@ export default function RegisterClient() {
             <Link to="/" className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline">← Back to Home</Link>
             </div>
             
-        </div>
+            </div>
         </main>
     </div>
     );
