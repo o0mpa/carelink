@@ -2,44 +2,44 @@ import { useState } from "react";
 import { Link, Form } from "react-router";
 
 export function meta() {
-    return [
+  return [
     { title: "Caregiver Sign Up - CareLink" },
     { name: "description", content: "Apply to become a trusted caregiver." },
-    ];
+  ];
 }
 
 export default function RegisterCaregiver() {
-    const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
-    return (
+  return (
     <div className="min-h-screen bg-linear-to-br from-emerald-100 via-white to-blue-100 py-12">
-        <main className="flex flex-col items-center justify-center px-4 sm:px-6">
+      <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-            
-            <h1 className="mb-2 text-center text-3xl font-extrabold text-emerald-900">
+          
+          <h1 className="mb-2 text-center text-3xl font-extrabold text-emerald-900">
             Caregiver Application
-            </h1>
-            <p className="mb-8 text-center text-sm text-gray-600">
+          </h1>
+          <p className="mb-8 text-center text-sm text-gray-600">
             Join our network of professional caregivers.
-            </p>
+          </p>
 
-            <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
+          <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
             
-            {/* Account Information  */}
+            {/* Account Information & Security */}
             <section>
-                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Account Information</h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Account Security</h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Username</label>
-                    <input type="text" name="username" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Username</label>
+                  <input type="text" name="username" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
-                    <input type="email" name="email" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
+                  <input type="email" name="email" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
-                    <input 
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
+                  <input 
                     type="password" 
                     name="password"
                     required 
@@ -48,30 +48,66 @@ export default function RegisterCaregiver() {
                     title="Password must be at least 8 characters long and contain at least one uppercase letter."
                     placeholder="Min 8 chars, 1 Capital"
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
-                    />
+                  />
                 </div>
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
-                    <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
+                  <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
+
+                {/* Security Questions */}
+                <div className="md:col-span-2 mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4">
+                  <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 1</label>
+                      <select name="securityQuestion1" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="">Select a question...</option>
+                        <option value="pet">What was the name of your first pet?</option>
+                        <option value="mother_maiden">What is your mother's maiden name?</option>
+                        <option value="city_born">In what city were you born?</option>
+                        <option value="school">What was the name of your elementary school?</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 1</label>
+                      <input type="text" name="securityAnswer1" required placeholder="Your answer" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 2</label>
+                      <select name="securityQuestion2" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="">Select a question...</option>
+                        <option value="car">What was the make of your first car?</option>
+                        <option value="friend">What is the name of your childhood best friend?</option>
+                        <option value="job">In what city was your first job?</option>
+                        <option value="street">What street did you grow up on?</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 2</label>
+                      <input type="text" name="securityAnswer2" required placeholder="Your answer" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
                 </div>
+              </div>
             </section>
 
-            {/*  Personal Information  */}
+            {/* Personal Information */}
             <section>
-                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Personal Information</h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Personal Information</h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
-                    <input type="text" name="fullName" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
+                  <input type="text" name="fullName" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
-                    <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
-                    <select name="gender" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
+                  <select name="gender" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    </select>
+                  </select>
                 </div>
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
@@ -93,7 +129,7 @@ export default function RegisterCaregiver() {
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" 
                     />
                 </div>
-                    <div>
+                <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
                     <input 
                     type="tel" 
@@ -109,7 +145,7 @@ export default function RegisterCaregiver() {
                 </div>
             </section>
 
-            {/* Location */}
+            {/*  Location  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Location</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

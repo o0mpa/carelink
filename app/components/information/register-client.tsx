@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Form } from "react-router"; 
+import { Link, Form } from "react-router";
 
 export function meta() {
     return [
@@ -19,16 +19,16 @@ export default function RegisterClient() {
     } else {
         setSelectedAllergies((prev) => prev.filter((item) => item !== value));
     }
-    };
+};
 
     const isNoneSelected = selectedAllergies.includes("none");
     const hasOtherAllergies = selectedAllergies.some((a) => a !== "none");
 
-    return (
+return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
         <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-            
+
             <h1 className="mb-2 text-center text-3xl font-extrabold text-blue-900">
             Client Registration
             </h1>
@@ -38,9 +38,9 @@ export default function RegisterClient() {
 
             <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
             
-            {/* Account Information */}
+            {/*  Account Information & Security  */}
             <section>
-                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Account Information</h2>
+                <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Account Security</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Username</label>
@@ -67,10 +67,46 @@ export default function RegisterClient() {
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
                     <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+                
+                {/* Security Questions */}
+                <div className="md:col-span-2 mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4">
+                    <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 1</label>
+                        <select name="securityQuestion1" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select a question...</option>
+                        <option value="pet">What was the name of your first pet?</option>
+                        <option value="mother_maiden">What is your grandfather's name?</option>
+                        <option value="city_born">In what city were you born?</option>
+                        <option value="school">What was the name of your elementary school?</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 1</label>
+                        <input type="text" name="securityAnswer1" required placeholder="Your answer" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 2</label>
+                        <select name="securityQuestion2" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select a question...</option>
+                        <option value="car">What was the brand of your first car?</option>
+                        <option value="friend">What is the name of your childhood best friend?</option>
+                        <option value="job">In what city was your first job?</option>
+                        <option value="street">What was your childhood nickname?</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 2</label>
+                        <input type="text" name="securityAnswer2" required placeholder="Your answer" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    </div>
+                </div>
                 </div>
             </section>
 
-            {/* Personal Information */}
+            {/*  Personal Information  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Personal Information</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -120,7 +156,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/* Location */}
+            {/*  Location  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Location</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -172,7 +208,7 @@ export default function RegisterClient() {
                 </div>
             </section>
 
-            {/* Medical Details & Documents */}
+            {/*  Medical Details & Documents  */}
             <section>
                 <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">Medical Details & Documents</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -190,11 +226,9 @@ export default function RegisterClient() {
                     </select>
                 </div>
                 
-                {/* Allergies Checkboxes */}
                 <div className="md:col-span-2">
                     <label className="mb-1 block text-sm font-semibold text-gray-700">Allergies</label>
                     <div className="flex min-h-11 w-full flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border-2 border-gray-300 bg-white px-4 py-3">
-                    
                     <label className={`flex cursor-pointer items-center gap-2 text-sm transition-opacity ${hasOtherAllergies ? "text-gray-400 opacity-60" : "text-gray-900 font-semibold"}`}>
                         <input 
                         type="checkbox" 
@@ -212,10 +246,11 @@ export default function RegisterClient() {
                         { id: "food", label: "Food" },
                         { id: "medication", label: "Medication" },
                         { id: "environmental", label: "Environmental" },
-                        { id: "pets", label: " home Pets" },
-                        { id: "insects", label: "Insects " },
+                        { id: "pets", label: "Pets / Dander" },
+                        { id: "latex", label: "Latex" },
+                        { id: "insects", label: "Insect Stings" },
                         { id: "pollen", label: "Pollen" },
-                        { id: "dust", label: "Dust " },
+                        { id: "dust", label: "Dust Mites" },
                     ].map((allergy) => (
                         <label 
                         key={allergy.id} 
@@ -223,7 +258,7 @@ export default function RegisterClient() {
                         >
                         <input 
                             type="checkbox" 
-                            name="allergies" 
+                            name="allergies"
                             value={allergy.id}
                             checked={selectedAllergies.includes(allergy.id)}
                             onChange={handleAllergyChange}
@@ -233,7 +268,6 @@ export default function RegisterClient() {
                         {allergy.label}
                         </label>
                     ))}
-
                     </div>
                 </div>
 
@@ -243,7 +277,7 @@ export default function RegisterClient() {
                 </div>
                 
                 <div className="md:col-span-2 mt-2 rounded-xl border-2 border-blue-200 bg-blue-50/30 p-4">
-                    <h3 className="mb-3 font-semibold text-blue-900">Document Uploads</h3>
+                        <h3 className="mb-3 font-semibold text-blue-900">Document Uploads</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div>
                         <label className="mb-1 block text-xs font-semibold text-gray-700">Upload National ID</label>
