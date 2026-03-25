@@ -174,7 +174,7 @@ export default function RequestsPage() {
 
           {/* Calendar Section */}
             <div className="lg:col-span-4">
-            <div className="sticky top-12 mx-auto max-w-[600px] rounded-[2.5rem] bg-white p-8 shadow-2xl ring-1 ring-emerald-200">
+            <div className="sticky top-12 mx-auto max-w-150 rounded-[2.5rem] bg-white p-8 shadow-2xl ring-1 ring-emerald-200">
                 <h3 className="mb-6 text-center text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">
                 Current month calendar
                 </h3>

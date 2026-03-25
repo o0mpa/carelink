@@ -12,7 +12,7 @@ export function meta() {
 
 export default function ClientDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-emerald-100">
+    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between bg-white/80 px-6 py-4 shadow-sm backdrop-blur-md">
         {/* Profile Picture - Top Left */}

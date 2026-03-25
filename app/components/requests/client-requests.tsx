@@ -83,7 +83,7 @@ export default function ClientRequests() {
           {myRequests.map((req: any) => (
             <div
               key={req.id}
-              className={`group flex flex-col items-start gap-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 transition-all hover:-translate-y-1 sm:flex-row sm:items-center sm:p-8 ${
+              className={`group flex flex-col items-start gap-6 rounded-4xl bg-white p-6 shadow-lg ring-1 transition-all hover:-translate-y-1 sm:flex-row sm:items-center sm:p-8 ${
                 req.status === "Accepted"
                   ? "ring-emerald-200 hover:shadow-emerald-100"
                   : req.status === "Pending"
