@@ -48,7 +48,7 @@ export default function ClientRequests() {
   // Grabs the data from the loader above
   const { myRequests } = useLoaderData();
 
-  return (
+  return ( 
     <div className="relative min-h-screen origin-top bg-white font-sans">
       {/* Background: Linear Gradient from the Caregiver Dashboard */}
       <div
