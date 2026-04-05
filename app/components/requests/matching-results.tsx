@@ -55,7 +55,7 @@ export default function MatchingResults() {
   const { matchedCaregivers } = useLoaderData();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-emerald-100 py-12">
+    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
       <main className="container mx-auto px-4 sm:px-6 md:px-10">
         <div className="mx-auto max-w-5xl">
           {/* Header Section */}
@@ -134,7 +134,6 @@ export default function MatchingResults() {
                     {caregiver.price}
                   </p>
                   
-                  {/* BACKEND READY: Form submission */}
                   <Form method="post" action="/requests/client" className="w-full sm:w-auto">
                     <input type="hidden" name="caregiverId" value={caregiver.id} />
                     <button

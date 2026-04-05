@@ -15,7 +15,6 @@ export default function CaregiverDashboard() {
     <div className="min-h-screen bg-linear-to-br from-emerald-100 via-white to-blue-100">
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between bg-white/80 px-6 py-4 shadow-sm backdrop-blur-md">
-        {/* Profile Picture - Top Left */}
         <Link
           to="/profile/caregiver"
           className="group flex items-center gap-3 transition-all hover:opacity-80"
@@ -41,19 +40,17 @@ export default function CaregiverDashboard() {
           </span>
         </Link>
 
-        {/* Logo / Brand Name */}
-        <div className="bg-gradient-to-r from-emerald-600 to-blue-700 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
+        {/* Logo */}
+        <div className="bg-linear-to-r from-emerald-600 to-blue-700 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
           CareLink
         </div>
 
-        {/* Empty div to balance the flexbox */}
-        <div className="w-12 sm:w-24"></div>
+=        <div className="w-12 sm:w-24"></div>
       </header>
 
       {/* Main Dashboard Content */}
       <main className="container mx-auto px-4 py-12 sm:px-6 md:px-10">
         <div className="mx-auto max-w-4xl">
-          {/* Centered Welcome Text */}
           <div className="mb-10 text-center">
             <h1 className="text-3xl font-extrabold text-emerald-900 sm:text-4xl">
               Welcome back, Your Name
@@ -64,7 +61,7 @@ export default function CaregiverDashboard() {
             </p>
           </div>
 
-          {/* Action Card - Single Column for Caregivers */}
+          {/* Action Card  */}
           <div className="mx-auto max-w-lg">
             <Link
               to="/requests/caregiver"

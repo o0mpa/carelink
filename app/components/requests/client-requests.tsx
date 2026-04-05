@@ -45,12 +45,10 @@ export async function loader() {
 }
 
 export default function ClientRequests() {
-  // Grabs the data from the loader above
   const { myRequests } = useLoaderData();
 
   return ( 
     <div className="relative min-h-screen origin-top bg-white font-sans">
-      {/* Background: Linear Gradient from the Caregiver Dashboard */}
       <div
         className="pointer-events-none fixed inset-0 opacity-20"
         style={{
@@ -111,7 +109,6 @@ export default function ClientRequests() {
                     {req.caregiverName}
                   </h3>
 
-                  {/* Dynamic Status Badge */}
                   <span
                     className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
                       req.status === "Accepted"
@@ -142,7 +139,7 @@ export default function ClientRequests() {
                 </div>
               </div>
 
-              {/* Action Buttons based on status */}
+              {/* Action Buttons */}
               <div className="flex w-full shrink-0 flex-col sm:w-auto">
                 {req.status === "Accepted" && (
                   <Form method="post" className="w-full">

@@ -15,7 +15,6 @@ export default function ClientDashboard() {
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between bg-white/80 px-6 py-4 shadow-sm backdrop-blur-md">
-        {/* Profile Picture - Top Left */}
         <Link
           to="/profile/client"
           className="group flex items-center gap-3 transition-all hover:opacity-80"
@@ -41,12 +40,11 @@ export default function ClientDashboard() {
           </span>
         </Link>
 
-        {/* Logo / Brand Name */}
-        <div className="bg-gradient-to-r from-blue-700 to-emerald-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
+        {/* Logo */}
+        <div className="bg-linear-to-r from-blue-700 to-emerald-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent">
           CareLink
         </div>
 
-        {/* Empty div to balance the flexbox */}
         <div className="w-12 sm:w-24"></div>
       </header>
 
@@ -62,7 +60,7 @@ export default function ClientDashboard() {
             </p>
           </div>
 
-          {/* Action Cards Grid */}
+          {/* Action Cards */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Link
               to="/request-care"

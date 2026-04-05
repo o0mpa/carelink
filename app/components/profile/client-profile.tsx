@@ -42,7 +42,6 @@ export async function loader() {
 
 export default function ClientProfile() {
     const [activeTab, setActiveTab] = useState<"personal" | "care">("personal");
-    // Grab the data from the loader
     const { user } = useLoaderData();
 
     return (
@@ -77,15 +76,18 @@ export default function ClientProfile() {
             
             {/* Buttons */}
             <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-0 sm:justify-end">
-                <button className="rounded-xl border-2 border-blue-600 bg-transparent px-5 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]">
-                Edit Profile
-                </button>
+            <Link 
+                    to="/profile/client/edit"
+                    className="flex items-center justify-center rounded-xl border-2 border-blue-600 bg-transparent px-5 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]"
+                >
+                    Edit Profile
+            </Link>
 
                 <Link 
                 to="/forgot-password"
                 className="flex items-center justify-center rounded-xl border-2 border-orange-500 bg-transparent px-5 py-2.5 text-sm font-bold text-orange-500 transition-all hover:bg-orange-50 active:scale-[0.98]"
                 >
-                Reset Password
+                change Password
                 </Link>
 
                 <Form method="post" action="/logout">

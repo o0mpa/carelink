@@ -53,7 +53,7 @@ export default function Login() {
                   </Link>
                 </div>
                 
-                 <button
+                <button
                   type="submit"
                   className="w-full cursor-pointer rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >

@@ -52,7 +52,6 @@ export default function CaregiverProfile() {
     "professional"
   );
   
-  // Grabs the data from the loader above
   const { caregiver } = useLoaderData();
 
   return (
@@ -113,9 +112,12 @@ export default function CaregiverProfile() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:mt-0">
-              <button className="rounded-xl border-2 border-emerald-600 bg-transparent px-5 py-2.5 text-sm font-bold text-emerald-600 transition-all hover:bg-emerald-50 active:scale-[0.98]">
-                Edit Profile
-              </button>
+          <Link 
+            to="/profile/caregiver/edit"
+            className="flex items-center justify-center rounded-xl border-2 border-emerald-600 bg-transparent px-5 py-2.5 text-sm font-bold text-emerald-600 transition-all hover:bg-emerald-50 active:scale-[0.98]"
+          >
+              Edit Profile
+          </Link>
               
               <Link
                 to="/forgot-password"

@@ -15,7 +15,9 @@ export default [
 
   // Profile
   route("profile/client", "components/profile/client-profile.tsx"),
+  route("profile/client/edit", "components/profile/edit-client.tsx"), 
   route("profile/caregiver", "components/profile/caregiver-profile.tsx"),
+  route("profile/caregiver/edit", "components/profile/edit-caregiver.tsx"), 
 
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
@@ -28,4 +30,5 @@ export default [
   // Status Tracking Pages
   route("requests/client", "components/requests/client-requests.tsx"),
   route("requests/caregiver", "components/requests/requests-incoming.tsx"),
+
 ] satisfies RouteConfig;
