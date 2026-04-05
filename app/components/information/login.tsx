@@ -1,10 +1,14 @@
-import { Link, Form } from "react-router"; 
+import {Link, Form, redirect} from "react-router"; 
 
 export function meta() {
   return [
-    { title: "Sign In - CareLink" },
-    { name: "description", content: "Sign in to your CareLink account." },
+    {title: "Sign In - CareLink"},
+    {name: "description", content: "Sign in to your CareLink account."},
   ];
+}
+
+export async function action({request}: {request: Request}) {
+  return redirect("/dashboard/client"); 
 }
 
 export default function Login() {
@@ -49,7 +53,7 @@ export default function Login() {
                   </Link>
                 </div>
                 
-                <button
+                 <button
                   type="submit"
                   className="w-full cursor-pointer rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
