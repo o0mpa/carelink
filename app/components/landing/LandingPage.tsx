@@ -82,7 +82,6 @@ export function LandingPage() {
         aria-hidden="true"
       />
 
-      {/* Main Content */}
       <div className="relative flex min-h-screen flex-col">
         <Header />
         <Hero />
