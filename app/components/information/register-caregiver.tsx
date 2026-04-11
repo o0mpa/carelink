@@ -8,10 +8,10 @@ export function meta() {
   ];
 }
 
-// BACKEND CONNECTION
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
+  // Check if passwords match
   if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
   }
@@ -19,7 +19,7 @@ export async function action({ request }: { request: Request }) {
   formData.delete("confirmPassword");
 
   try {
-    const response = await fetch("http://localhost:5000/api/register/caregiver", {
+    const response = await fetch("http://localhost:5000/api/auth/signup-caregiver", {
       method: "POST",
       body: formData, 
     });
@@ -53,7 +53,6 @@ export default function RegisterCaregiver() {
             Join our network of professional caregivers.
           </p>
 
-          {/* Error Banner */}
           {actionData?.error && (
             <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
               {actionData.error}
@@ -82,7 +81,6 @@ export default function RegisterCaregiver() {
                   <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
 
-                {/* Security Questions */}
                 <div className="mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4 md:col-span-2">
                   <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -114,7 +112,7 @@ export default function RegisterCaregiver() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
-                  <input type="text" name="fullName" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="text" name="full_name" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
@@ -126,11 +124,15 @@ export default function RegisterCaregiver() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input type="date" name="dateOfBirth" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="date" name="date_of_birth" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
-                <div className="md:col-span-2">
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
+                  <input type="number" name="age" min="0" max="100" required onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") { e.preventDefault(); } }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" />
+                </div>
+                <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
-                  <input type="tel" name="phone" required maxLength={11} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="tel" name="phone_number" required maxLength={11} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
               </div>
             </section>
@@ -195,7 +197,7 @@ export default function RegisterCaregiver() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Address</label>
-                  <input type="text" name="address" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="text" name="full_address" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
               </div>
             </section>
@@ -234,29 +236,29 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* Document Uploads (NOW WITH ACCEPT LIMITS) */}
+            {/* Document Uploads */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Verification Documents</h2>
               <div className="grid grid-cols-1 gap-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4 md:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">High School / Higher Ed</label>
-                  <input type="file" name="doc_education" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="education_docs" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">Caregiving / First Aid Cert</label>
-                  <input type="file" name="doc_certification" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="certificates" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">National ID</label>
-                  <input type="file" name="doc_national_id" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="national_id" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">Criminal Record</label>
-                  <input type="file" name="doc_criminal_record" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="criminal_record" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">Past References (Optional)</label>
-                  <input type="file" name="doc_references" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="references" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
               </div>
             </section>
@@ -269,28 +271,28 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category A (3h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_a" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="day_rate_a" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category B (6h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_b" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="day_rate_b" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category C (9h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_c" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="day_rate_c" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category D (12h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_d" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="day_rate_d" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
               </div>

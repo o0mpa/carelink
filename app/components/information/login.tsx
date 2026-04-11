@@ -9,23 +9,35 @@ export function meta() {
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
-  const username = formData.get("username");
-  const password = formData.get("password");
+  const username = formData.get("username")?.toString().trim() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
 
-  // Simulate a fetch to Node.js/MySQL to verify credentials
   if (!username || !password) {
     return { error: "Please fill in all fields." };
   }
 
-  // replace this with a fetch to their API
-  // const response = await fetch("your-node-api/login", { method: "POST", body: formData });
-  
-  // Logic to redirect based on user role from database
-  return redirect("/dashboard/client"); 
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return { error: result.message || "Invalid username or password." };
+    }
+
+    // Backend returns role as 'Client' or 'Caregiver'
+    return redirect(result.user.role === "Caregiver" ? "/dashboard/caregiver" : "/dashboard/client");
+
+  } catch (err) {
+    return { error: "Cannot connect to the server." };
+  }
 }
 
 export default function Login() {
-  // Catch error messages from the backend action
   const actionData = useActionData() as { error?: string };
 
   return (
@@ -41,7 +53,6 @@ export default function Login() {
           <div className="mt-8">
             <div className="rounded-3xl bg-white/90 p-8 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
               
-              {/* Error Message Display  */}
               {actionData?.error && (
                 <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm font-semibold text-red-600 border border-red-100">
                   {actionData.error}
@@ -73,7 +84,7 @@ export default function Login() {
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <Link to="/forgot-password" data-testid="forgot-password-link" className="text-xs font-bold text-blue-500 transition-colors hover:text-emerald-600 hover:underline">
+                  <Link to="/forgot-password" className="text-xs font-bold text-blue-500 transition-colors hover:text-emerald-600 hover:underline">
                     Forgot password?
                   </Link>
                 </div>
@@ -85,7 +96,7 @@ export default function Login() {
                   Sign In
                 </button>
               </Form>
-    
+
               <div className="mt-8 flex flex-col items-center gap-2 border-t border-gray-200 pt-6 text-sm text-gray-600">
                 <div>
                   New to CareLink?{" "}
