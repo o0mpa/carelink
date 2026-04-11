@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Form, redirect } from "react-router";
+import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
 
 export function meta() {
   return [
@@ -8,11 +8,38 @@ export function meta() {
   ];
 }
 
-export async function action() {
-  return redirect("/login");
+// BACKEND CONNECTION
+export async function action({ request }: { request: Request }) {
+  const formData = await request.formData();
+
+  if (formData.get("password") !== formData.get("confirmPassword")) {
+    return { error: "Passwords do not match. Please try again." };
+  }
+  
+  formData.delete("confirmPassword");
+
+  try {
+    const response = await fetch("http://localhost:5000/api/register/caregiver", {
+      method: "POST",
+      body: formData, 
+    });
+
+    if (response.ok) {
+      return redirect("/login?registered=true");
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      return { error: errorData.message || "Registration failed. Please try again." };
+    }
+  } catch (error) {
+    return { error: "Cannot connect to the server. Is your backend running?" };
+  }
 }
 
 export default function RegisterCaregiver() {
+  const actionData = useActionData<{ error?: string }>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+
   const [selectedCity, setSelectedCity] = useState("");
 
   return (
@@ -25,6 +52,13 @@ export default function RegisterCaregiver() {
           <p className="mb-8 text-center text-sm text-gray-600">
             Join our network of professional caregivers.
           </p>
+
+          {/* Error Banner */}
+          {actionData?.error && (
+            <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
+              {actionData.error}
+            </div>
+          )}
 
           <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
             {/* Account Information & Security */}
@@ -78,7 +112,7 @@ export default function RegisterCaregiver() {
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Personal Information</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
+                <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
                   <input type="text" name="fullName" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
@@ -94,11 +128,7 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
                   <input type="date" name="dateOfBirth" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
-                  <input type="number" name="age" min="0" max="100" required onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") { e.preventDefault(); } }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" />
-                </div>
-                <div>
+                <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
                   <input type="tel" name="phone" required maxLength={11} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
@@ -204,29 +234,29 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* Document Uploads */}
+            {/* Document Uploads (NOW WITH ACCEPT LIMITS) */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Verification Documents</h2>
               <div className="grid grid-cols-1 gap-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4 md:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">High School / Higher Education</label>
-                  <input type="file" name="doc_education" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <label className="mb-1 block text-xs font-semibold text-gray-700">High School / Higher Ed</label>
+                  <input type="file" name="doc_education" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">Caregiving / First Aid certificate</label>
-                  <input type="file" name="doc_certification" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <label className="mb-1 block text-xs font-semibold text-gray-700">Caregiving / First Aid Cert</label>
+                  <input type="file" name="doc_certification" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">National ID</label>
-                  <input type="file" name="doc_national_id" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="doc_national_id" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">Criminal Record</label>
-                  <input type="file" name="doc_criminal_record" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="doc_criminal_record" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-700">Past References (Optional)</label>
-                  <input type="file" name="doc_references" className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
+                  <input type="file" name="doc_references" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-emerald-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-emerald-700 file:transition-colors file:hover:bg-emerald-200" />
                 </div>
               </div>
             </section>
@@ -239,35 +269,39 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category A (3h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_a" min="0" max="500" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="salary_category_a" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category B (6h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_b" min="0" max="500" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="salary_category_b" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category C (9h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_c" min="0" max="500" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="salary_category_c" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category D (12h)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="salary_category_d" min="0" max="500" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input type="number" name="salary_category_d" min="0" max="5000" required placeholder="0.00" className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                   </div>
                 </div>
               </div>
             </section>
 
-            <button type="submit" className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]">
-              Submit Application
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:opacity-70"
+            >
+              {isSubmitting ? "Submitting Application..." : "Submit Application"}
             </button>
           </Form>
 

@@ -128,7 +128,7 @@ export default function ChatInterface() {
                     )}
                     </div>
                 )}
-
+ 
                 <div className={`flex max-w-[80%] flex-col gap-1.5 sm:max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
                 
                     <div 
