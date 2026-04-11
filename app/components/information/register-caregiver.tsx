@@ -16,6 +16,7 @@ export async function action({ request }: { request: Request }) {
     return { error: "Passwords do not match. Please try again." };
   }
   
+  // Clean up data
   formData.delete("confirmPassword");
 
   try {
@@ -231,7 +232,7 @@ export default function RegisterCaregiver() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Medical Specialties (Conditions/Disabilities Experienced In):</label>
-                  <input type="text" name="medicalSpecialties" placeholder="e.g., Dementia care, Post-surgery recovery" className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="text" name="medical_specialties" placeholder="e.g., Dementia care, Post-surgery recovery" className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
               </div>
             </section>

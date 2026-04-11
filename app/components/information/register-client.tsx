@@ -11,18 +11,25 @@ export function meta() {
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
-  // Check if passwords match
+  // Check if passwords match before sending
   if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
   }
   
-  // Remove confirm field to keep data clean for the backend
+  // Clean up data
   formData.delete("confirmPassword");
+  
+  // If the user typed an "Other" allergy, push it into the main allergies list
+  const otherAllergy = formData.get("otherAllergiesSpecify");
+  if (otherAllergy) {
+    formData.append("allergies", otherAllergy as string);
+  }
+  formData.delete("otherAllergiesSpecify");
 
   try {
+    // Talk to the backend authController
     const response = await fetch("http://localhost:5000/api/auth/signup-client", {
       method: "POST",
-      // Sending raw formData so Multer can extract the files
       body: formData, 
     });
 
