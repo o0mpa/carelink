@@ -1,4 +1,5 @@
-import { Link, Form, redirect, useActionData } from "react-router"; 
+import { Link, Form, redirect, useActionData, useSearchParams } from "react-router"; 
+import { apiUrl } from "../../utils/api";
 
 export function meta() {
   return [
@@ -17,7 +18,7 @@ export async function action({ request }: { request: Request }) {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/api/auth/signin", {
+    const response = await fetch(apiUrl("/api/auth/signin"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -29,8 +30,8 @@ export async function action({ request }: { request: Request }) {
       return { error: result.message || "Invalid username or password." };
     }
 
-    // Backend returns role as 'Client' or 'Caregiver'
-    return redirect(result.user.role === "Caregiver" ? "/dashboard/caregiver" : "/dashboard/client");
+    // Backend returns role directly as 'Client' or 'Caregiver'
+    return redirect(result.role === "Caregiver" ? "/dashboard/caregiver" : "/dashboard/client");
 
   } catch (err) {
     return { error: "Cannot connect to the server." };
@@ -39,6 +40,9 @@ export async function action({ request }: { request: Request }) {
 
 export default function Login() {
   const actionData = useActionData() as { error?: string };
+  const [searchParams] = useSearchParams();
+  const justRegistered = searchParams.get("registered") === "true";
+  const justReset = searchParams.get("reset") === "true";
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-linear-to-br from-blue-200 via-white to-emerald-200">
@@ -56,6 +60,13 @@ export default function Login() {
               {actionData?.error && (
                 <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm font-semibold text-red-600 border border-red-100">
                   {actionData.error}
+                </div>
+              )}
+              {!actionData?.error && (justRegistered || justReset) && (
+                <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">
+                  {justRegistered
+                    ? "Registration completed. Please sign in."
+                    : "Password updated successfully. Please sign in."}
                 </div>
               )}
 

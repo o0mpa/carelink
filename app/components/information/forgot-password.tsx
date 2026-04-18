@@ -1,13 +1,62 @@
 import { useState } from "react";
-import { Form } from "react-router";
+import { Form, Link, redirect, useActionData, useNavigation } from "react-router";
+import { apiUrl } from "../../utils/api";
+
+export async function action({ request }: { request: Request }) {
+  const formData = await request.formData();
+  const username = formData.get("username")?.toString().trim() ?? "";
+  const securityAnswer1 = formData.get("securityAnswer1")?.toString().trim() ?? "";
+  const securityAnswer2 = formData.get("securityAnswer2")?.toString().trim() ?? "";
+  const newPassword = formData.get("newPassword")?.toString() ?? "";
+  const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+
+  if (!username || !securityAnswer1 || !securityAnswer2 || !newPassword || !confirmPassword) {
+    return { error: "Please fill in all fields." };
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { error: "Passwords do not match." };
+  }
+
+  try {
+    const response = await fetch(apiUrl("/api/auth/forgot-password-security"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        securityAnswer1,
+        securityAnswer2,
+        newPassword,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { error: result.message || "Password reset failed. Please try again." };
+    }
+
+    return redirect("/login?reset=true");
+  } catch (_error) {
+    return { error: "Cannot connect to the server. Is your backend running?" };
+  }
+}
 
 export default function ResetPassword() {
+  const actionData = useActionData() as { error?: string } | undefined;
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
   const [step, setStep] = useState(1);
+  const [username, setUsername] = useState("");
+  const [securityAnswer1, setSecurityAnswer1] = useState("");
+  const [securityAnswer2, setSecurityAnswer2] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username || !securityAnswer1 || !securityAnswer2) {
+      return;
+    }
     setStep(2);
   };
 
@@ -41,9 +90,29 @@ export default function ResetPassword() {
           </p>
         </div>
 
+        {actionData?.error && (
+          <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-center text-sm font-semibold text-red-600">
+            {actionData.error}
+          </div>
+        )}
+
         {step === 1 ? (
           /* STEP 1: SECURITY QUESTIONS */
           <form onSubmit={handleVerify} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500">
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                required
+                placeholder="Enter your username"
+                className="w-full rounded-xl border-2 border-gray-200 p-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-emerald-200"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase text-slate-500">
                 Security Question 1
@@ -57,6 +126,8 @@ export default function ResetPassword() {
                 required
                 placeholder="Dog, Cat"
                 className="w-full rounded-xl border-2 border-gray-200 p-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-emerald-200"
+                value={securityAnswer1}
+                onChange={(e) => setSecurityAnswer1(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -72,6 +143,8 @@ export default function ResetPassword() {
                 placeholder="Cairo, Giza"
                 required
                 className="w-full rounded-xl border-2 border-gray-200 p-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-emerald-200"
+                value={securityAnswer2}
+                onChange={(e) => setSecurityAnswer2(e.target.value)}
               />
             </div>
             <button
@@ -84,6 +157,9 @@ export default function ResetPassword() {
         ) : (
           /* STEP 2: NEW PASSWORD INPUTS */
           <Form method="post" className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-300">
+            <input type="hidden" name="username" value={username} />
+            <input type="hidden" name="securityAnswer1" value={securityAnswer1} />
+            <input type="hidden" name="securityAnswer2" value={securityAnswer2} />
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-900">
                 <div className="mb-2">New Password</div>
@@ -133,12 +209,18 @@ export default function ResetPassword() {
             </div>
             <button
               type="submit"
+                disabled={isSubmitting || password !== confirmPassword}
               className="w-full rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-3 font-bold text-white shadow-md transition-all hover:scale-[1.02] hover:bg-emerald-700 hover:focus:ring-2 focus:ring-teal-500"
             >
-              Update Password
+                {isSubmitting ? "Updating Password..." : "Update Password"}
             </button>
           </Form>
         )}
+        <div className="mt-4 text-center text-sm text-gray-600">
+          <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+            Back to Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );

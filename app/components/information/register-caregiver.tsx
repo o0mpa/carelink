@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
+import { apiUrl } from "../../utils/api";
 
 export function meta() {
   return [
@@ -15,12 +16,17 @@ export async function action({ request }: { request: Request }) {
   if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
   }
+
+  // Backend stores skills as JSON; prevent undefined values.
+  if (formData.getAll("skills").length === 0) {
+    return { error: "Please select at least one caregiving skill." };
+  }
   
   // Clean up data
   formData.delete("confirmPassword");
 
   try {
-    const response = await fetch("http://localhost:5000/api/auth/signup-caregiver", {
+    const response = await fetch(apiUrl("/api/auth/signup-caregiver"), {
       method: "POST",
       body: formData, 
     });
@@ -119,8 +125,8 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
                   <select name="gender" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
                   </select>
                 </div>
                 <div>
@@ -146,16 +152,16 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">City</label>
                   <select name="city" required value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Select City</option>
-                    <option value="cairo">Cairo</option>
-                    <option value="giza">Giza</option>
-                    <option value="alexandria">Alexandria</option>
+                    <option value="Cairo">Cairo</option>
+                    <option value="Giza">Giza</option>
+                    <option value="Alexandria">Alexandria</option>
                   </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
                   <select name="area" required disabled={!selectedCity} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100">
                     <option value="">Select Area</option>
-                    {selectedCity === "cairo" && (
+                    {selectedCity === "Cairo" && (
                       <>
                         <option value="Nasr City">Nasr City</option>
                         <option value="Heliopolis">Heliopolis (Masr El Gedida)</option>
@@ -171,7 +177,7 @@ export default function RegisterCaregiver() {
                         <option value="Fifth Settlement">Fifth Settlement</option>
                       </>
                     )}
-                    {selectedCity === "giza" && (
+                    {selectedCity === "Giza" && (
                       <>
                         <option value="Dokki">Dokki</option>
                         <option value="Mohandessin">Mohandessin</option>
@@ -183,7 +189,7 @@ export default function RegisterCaregiver() {
                         <option value="Imbaba">Imbaba</option>
                       </>
                     )}
-                    {selectedCity === "alexandria" && (
+                    {selectedCity === "Alexandria" && (
                       <>
                         <option value="Smouha">Smouha</option>
                         <option value="Sidi Gaber">Sidi Gaber</option>
