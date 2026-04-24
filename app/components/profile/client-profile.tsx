@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, Form, useLoaderData } from "react-router"; 
+import { useMemo, useState } from "react";
+import { Link, Form } from "react-router";
 
 export function meta() {
     return [
@@ -8,41 +8,138 @@ export function meta() {
     ];
 }
 
-export async function loader() {
-    return {
-    user: {
-        name: "your name",
-        role: "Client / Family Member",
-        email: "name@example.com",
-        phone: "+20 123 456 7890",
-        age: 45,
-        gender: "Male",
-        location: {
-        city: "Cairo",
-        area: "Maadi",
-        address: "123 Nile View St, Apt 4"
-        },
-        medical: {
-        bloodType: "O+",
-        allergies: "Penicillin",
-        doctor: "Dr name",
-        facility: "Dar Al Fouad Hospital"
-        },
-        careNeeds: {
-        skills: ["Mobility Assistance", "Medication Management"],
-        specialties: ["Post-Surgery Care"]
-        },
-        emergency: {
-        primary: { name: "Fatima Hassan", relation: "Wife", phone: "+20 111 222 3333" },
-        secondary: { name: "Omar Hassan", relation: "Son", phone: "+20 100 999 8888" }
-        }
-    }
+type ProfileUser = {
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+    age: string;
+    gender: string;
+    location: {
+    city: string;
+    area: string;
+    address: string;
     };
-}
+    medical: {
+    bloodType: string;
+    allergies: string;
+    doctor: string;
+    facility: string;
+  };
+  careNeeds: {
+    skills: string[];
+    specialties: string[];
+  };
+  emergency: {
+    primary: { name: string; relation: string; phone: string };
+    secondary: { name: string; relation: string; phone: string };
+  };
+};
+
+const defaultUser: ProfileUser = {
+  name: "Your Name",
+  role: "Client / Family Member",
+  email: "",
+  phone: "",
+  age: "",
+  gender: "",
+  location: {
+    city: "",
+    area: "",
+    address: "",
+  },
+  medical: {
+    bloodType: "",
+    allergies: "Not provided",
+    doctor: "",
+    facility: "",
+  },
+  careNeeds: {
+    skills: [],
+    specialties: [],
+  },
+  emergency: {
+    primary: { name: "", relation: "Primary", phone: "" },
+    secondary: { name: "", relation: "Secondary", phone: "" },
+  },
+};
+
+const parseArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [];
+};
+
+const toText = (value: unknown): string => (value == null ? "" : String(value));
+
+const mapProfile = (profile: Record<string, unknown>): ProfileUser => ({
+  name: toText(profile.full_name) || "Your Name",
+  role: "Client / Family Member",
+  email: toText(profile.email),
+  phone: toText(profile.phone_number),
+  age: toText(profile.age),
+  gender: toText(profile.gender),
+  location: {
+    city: toText(profile.city),
+    area: toText(profile.area),
+    address: toText(profile.full_address),
+  },
+  medical: {
+    bloodType: toText(profile.blood_type),
+    allergies: parseArray(profile.allergies).join(", ") || "Not provided",
+    doctor: toText(profile.doctor_name),
+    facility: toText(profile.doctor_facility),
+  },
+  careNeeds: {
+    skills: parseArray(profile.skills),
+    specialties: parseArray(profile.medical_specialties_required),
+  },
+  emergency: {
+    primary: {
+      name: toText(profile.emergency_contact1_name),
+      relation: "Primary",
+      phone: toText(profile.emergency_contact1_phone),
+    },
+    secondary: {
+      name: toText(profile.emergency_contact2_name),
+      relation: "Secondary",
+      phone: toText(profile.emergency_contact2_phone),
+    },
+  },
+});
 
 export default function ClientProfile() {
     const [activeTab, setActiveTab] = useState<"personal" | "care">("personal");
-    const { user } = useLoaderData();
+    const user = useMemo(() => {
+      if (typeof window === "undefined") return defaultUser;
+
+      const raw = localStorage.getItem("carelink_profile");
+      if (!raw) return defaultUser;
+
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return defaultUser;
+        return mapProfile(parsed as Record<string, unknown>);
+      } catch {
+        return defaultUser;
+      }
+    }, []);
 
     return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">

@@ -1,91 +1,133 @@
 import { useState } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
-import { apiUrl } from "../../utils/api";
 
 export function meta() {
-  return [
+    return [
     { title: "Family Sign Up - CareLink" },
     { name: "description", content: "Create an account to find trusted caregivers." },
-  ];
+    ];
 }
 
+//  DOB and Age stay in sync
+const calculateAge = (dob: string) => {
+    if (!dob) return "";
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age < 0 ? 0 : age;
+};
+
 export async function action({ request }: { request: Request }) {
-  const formData = await request.formData();
-
-  // Check if passwords match before sending
-  if (formData.get("password") !== formData.get("confirmPassword")) {
+    const formData = await request.formData();
+    // 1. Password Validation
+    if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
-  }
+    }
+    
+    formData.delete("confirmPassword");
+    
 
-  // Backend stores checkbox groups as JSON; prevent undefined values.
-  if (formData.getAll("skills").length === 0) {
-    return { error: "Please select at least one required skill." };
-  }
-  if (formData.getAll("allergies").length === 0) {
-    return { error: "Please select at least one allergy option." };
-  }
-  
-  // Clean up data
-  formData.delete("confirmPassword");
-  
-  // If the user typed an "Other" allergy, push it into the main allergies list
-  const otherAllergy = formData.get("otherAllergiesSpecify");
-  if (otherAllergy) {
-    formData.append("allergies", otherAllergy as string);
-  }
-  formData.delete("otherAllergiesSpecify");
+//  const allergies = formData.getAll("allergies");
+//     const otherAllergy = formData.get("otherAllergiesSpecify");
+//     if (otherAllergy) allergies.push(otherAllergy as string);
+    
+//     formData.set("allergies", JSON.stringify(allergies.filter(a => a !== "none")));
+//     formData.delete("otherAllergiesSpecify");
 
-  try {
-    // Talk to the backend authController
-    const response = await fetch(apiUrl("/api/auth/signup-client"), {
-      method: "POST",
-      body: formData, 
+//         const skills = formData.getAll("skills");
+//     formData.set("skills", skills.join(", "));
+//     formData.delete("skills");
+
+    // Keep allergies as repeated multipart fields 
+    const allergies = formData
+      .getAll("allergies")
+      .map((a) => String(a).trim())
+      .filter(Boolean);
+    const otherAllergy = String(formData.get("otherAllergiesSpecify") ?? "").trim();
+    if (otherAllergy) allergies.push(otherAllergy);
+
+    const normalizedAllergies = allergies.filter((a) => a !== "none");
+    formData.delete("allergies");
+    normalizedAllergies.forEach((a) => formData.append("allergies", a));
+    formData.delete("otherAllergiesSpecify");
+
+    const skills = formData.getAll("skills");
+    if (skills.length === 0) {
+    return { error: "Please select at least one skill needed." };
+    }
+
+
+    try {
+    const response = await fetch("http://localhost:5000/api/auth/signup-client", {
+        method: "POST",
+        body: formData, 
     });
 
     if (response.ok) {
-      return redirect("/login?registered=true");
+        return redirect("/login?registered=true");
     } else {
-      const errorData = await response.json().catch(() => ({}));
-      return { error: errorData.message || "Registration failed. Please try again." };
+        const errorText = await response.text().catch(() => "");
+        let errorData: Record<string, unknown> = {};
+        try {
+        errorData = errorText ? JSON.parse(errorText) : {};
+        } catch {
+        errorData = {};
+        }
+
+        const extractedError =
+        (typeof errorData.message === "string" && errorData.message) ||
+        (typeof errorData.error === "string" && errorData.error) ||
+        (typeof errorData.data === "string" && errorData.data) ||
+        (typeof errorText === "string" && errorText.trim() ? errorText : "");
+
+        return { error: extractedError || "Registration failed. Please try again." };
     }
-  } catch (error) {
+    } catch (error) {
     return { error: "Cannot connect to the server. Is your backend running?" };
-  }
+    }
 }
 
 export default function RegisterClient() {
-  const actionData = useActionData<{ error?: string }>();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+    const actionData = useActionData<{ error?: string }>();
+    const navigation = useNavigation();
+    const isSubmitting = navigation.state === "submitting";
 
-  const [selectedCity, setSelectedCity] = useState("");
-  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+    const [selectedCity, setSelectedCity] = useState("");
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+    const [calculatedAge, setCalculatedAge] = useState<number | string>("");
 
-  const handleAllergyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAllergyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
     if (checked) {
-      setSelectedAllergies((prev) => [...prev, value]);
+        setSelectedAllergies((prev) => [...prev, value]);
     } else {
-      setSelectedAllergies((prev) => prev.filter((item) => item !== value));
+        setSelectedAllergies((prev) => prev.filter((item) => item !== value));
     }
-  };
+    };
+        const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCalculatedAge(calculateAge(e.target.value));
+    };
 
-  const isNoneSelected = selectedAllergies.includes("none");
-  const hasOtherAllergies = selectedAllergies.some((a) => a !== "none");
+    const isNoneSelected = selectedAllergies.includes("none");
+    const hasOtherAllergies = selectedAllergies.some((a) => a !== "none");
 
-  const foodAllergies = ["Peanuts", "Tree Nuts", "Milk / Dairy", "Eggs", "Fish", "Shellfish", "Soy", "Wheat / Gluten", "Sesame", "Strawberries"];
-  const medAllergies = ["Penicillin", "Antibiotics (General)", "Aspirin", "Ibuprofen / NSAIDS", "Sulfa Drugs", "Codeine"];
-  const envAllergies = ["Dust", "Pollen", "Mold", "Pet Dander", "Insect Stings"];
-  const otherAllergiesList = ["Latex", "Certain Fabrics", "Cleaning Chemicals", "Perfumes / Fragrances"];
+    const foodAllergies = ["Peanuts", "Tree Nuts", "Milk / Dairy", "Eggs", "Fish", "Shellfish", "Soy", "Wheat / Gluten", "Sesame", "Strawberries"];
+    const medAllergies = ["Penicillin", "Antibiotics (General)", "Aspirin", "Ibuprofen / NSAIDS", "Sulfa Drugs", "Codeine"];
+    const envAllergies = ["Dust", "Pollen", "Mold", "Pet Dander", "Insect Stings"];
+    const otherAllergiesList = ["Latex", "Certain Fabrics", "Cleaning Chemicals", "Perfumes / Fragrances"];
 
-  return (
+    return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
-      <main className="flex flex-col items-center justify-center px-4 sm:px-6">
+        <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-          <h1 className="mb-2 text-center text-3xl font-extrabold text-blue-900">
+            <h1 className="mb-2 text-center text-3xl font-extrabold text-blue-900">
             Client Registration
-          </h1>
-          <p className="mb-8 text-center text-sm text-gray-600">
+            </h1>
+            <p className="mb-8 text-center text-sm text-gray-600">
             Create an account to find the perfect caregiver for your needs.
           </p>
 
@@ -109,14 +151,16 @@ export default function RegisterClient() {
                   <input type="email" name="email" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
-                  <input type="password" name="password" required minLength={8} pattern=".*[A-Z].*" title="Password must be at least 8 characters long and contain at least one uppercase letter." placeholder="Min 8 chars, 1 Capital" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
+                    <input type="password" name="password" required minLength={8} pattern=".*[A-Z].*[!@#$%^&*].*" title="Password must be at least 8 characters long and contain at least one uppercase letter and one special character (!@#$%^&*)." placeholder="Min 8 chars, 1 Capital, 1 Special char" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {/* */}
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
-                  <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="password" name="confirmPassword" required minLength={8} pattern=".*[A-Z].*[!@#$%^&*].*" title="Password must be at least 8 characters long and contain at least one uppercase letter and one special character (!@#$%^&*)." placeholder="Min 8 chars, 1 Capital, 1 Special char"  className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                {/**/}
                 </div>
-
+                                {/* Recovery Questions  */}
                 <div className="mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4 md:col-span-2">
                   <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -154,17 +198,17 @@ export default function RegisterClient() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
                   <select name="gender" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
                   </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input type="date" name="date_of_birth" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="date" name="date_of_birth" required onChange={handleDateChange} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
-                  <input type="number" name="age" min="0" max="100" required onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") e.preventDefault(); }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" />
+                  <input type="number" name="age" value={calculatedAge} readOnly required className="w-full rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none cursor-not-allowed" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
@@ -330,15 +374,15 @@ export default function RegisterClient() {
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-700">Upload National ID</label>
-                      <input type="file" name="national_id" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
+                      <input type="file" name="national_id" accept=".jpg, .jpeg, .png, .pdf, .txt" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-700">Upload Diagnoses</label>
-                      <input type="file" name="diagnoses" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
+                      <input type="file" name="diagnoses" accept=".jpg, .jpeg, .png, .pdf, .txt" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-700">Upload Conditions</label>
-                      <input type="file" name="conditions" accept=".jpg, .jpeg, .png, .pdf" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
+                      <input type="file" name="conditions" accept=".jpg, .jpeg, .png, .pdf, .txt" required className="max-w-full text-xs font-semibold text-gray-900 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-blue-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-blue-700 file:transition-colors file:hover:bg-blue-200" />
                     </div>
                   </div>
                 </div>
@@ -432,4 +476,4 @@ export default function RegisterClient() {
       </main>
     </div>
   );
-}
+} 

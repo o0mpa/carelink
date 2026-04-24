@@ -1,64 +1,134 @@
-import { useState } from "react";
-import { useLoaderData, Link } from "react-router";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router";
+import axiosInstance from "~/utils/axiosinstance";
 
-export async function loader() {
-    return {
-        initialRequests: [
-            { id: 1,  patientName: "Patient A", gender: "Male",   city: "Cairo", area: "Maadi",         phone: "+20 100 123 4567", serviceType: "Nursing Care",    requirements: ["Physical Care", "Diabetes", "Housekeeping"],       rateOffered: "E£ 250", date: "March 15, 2026",  month: 3, year: 2026, dayNumber: 15, duration: "3 Hours"  },
-            { id: 2,  patientName: "Patient B", gender: "Female", city: "Giza",  area: "Dokki",          phone: "+20 111 234 5678", serviceType: "Elderly Care",     requirements: ["Alzheimer's", "Physical Care"],                    rateOffered: "E£ 450", date: "March 22, 2026",  month: 3, year: 2026, dayNumber: 22, duration: "6 Hours"  },
-            { id: 3,  patientName: "Patient C", gender: "Male",   city: "Cairo", area: "Heliopolis",     phone: "+20 122 345 6789", serviceType: "Specialized Care", requirements: ["Physical Therapy", "Medication Management"],       rateOffered: "E£ 850", date: "March 25, 2026",  month: 3, year: 2026, dayNumber: 25, duration: "12 Hours" },
-            { id: 4,  patientName: "Patient D", gender: "Female", city: "Cairo", area: "Nasr City",      phone: "+20 100 456 7890", serviceType: "Home Care",        requirements: ["Health Monitoring", "Elderly Care"],               rateOffered: "E£ 250", date: "March 27, 2026",  month: 3, year: 2026, dayNumber: 27, duration: "3 Hours"  },
-            { id: 5,  patientName: "Patient E", gender: "Male",   city: "Giza",  area: "Mohandseen",     phone: "+20 111 567 8901", serviceType: "Companion Care",   requirements: ["Emotional Support"],                               rateOffered: "E£ 450", date: "March 28, 2026",  month: 3, year: 2026, dayNumber: 28, duration: "6 Hours"  },
-            { id: 6,  patientName: "Patient F", gender: "Female", city: "Cairo", area: "Zamalek",        phone: "+20 122 678 9012", serviceType: "Elderly Care",     requirements: ["Diabetes", "Mobility"],                            rateOffered: "E£ 850", date: "March 30, 2026",  month: 3, year: 2026, dayNumber: 30, duration: "12 Hours" },
-            { id: 7,  patientName: "Patient G", gender: "Male",   city: "Cairo", area: "Maadi",          phone: "+20 100 789 0123", serviceType: "Nursing Care",     requirements: ["Medication Management"],                           rateOffered: "E£ 450", date: "April 02, 2026",  month: 4, year: 2026, dayNumber: 2,  duration: "6 Hours"  },
-            { id: 8,  patientName: "Patient H", gender: "Female", city: "Giza",  area: "6th of October", phone: "+20 111 890 1234", serviceType: "Companion Care",   requirements: ["Emotional Support", "Meal Prep", "Transportation"], rateOffered: "E£ 250", date: "April 04, 2026",  month: 4, year: 2026, dayNumber: 4,  duration: "3 Hours"  },
-            { id: 9,  patientName: "Patient I", gender: "Male",   city: "Cairo", area: "New Cairo",      phone: "+20 122 901 2345", serviceType: "Specialized Care", requirements: ["Elderly Care", "Diabetes"],                        rateOffered: "E£ 850", date: "April 05, 2026",  month: 4, year: 2026, dayNumber: 5,  duration: "12 Hours" },
-            { id: 10, patientName: "Patient J", gender: "Female", city: "Cairo", area: "Heliopolis",     phone: "+20 100 012 3456", serviceType: "Home Care",        requirements: ["Dementia", "Transportation"],                      rateOffered: "E£ 450", date: "April 07, 2026",  month: 4, year: 2026, dayNumber: 7,  duration: "6 Hours"  },
-        ],
-        initialBookedDates: ["2026-4-1"],
-    };
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface IncomingRequest {
+    request_id: number;
+    service_type: string;
+    day_category: string;           // "A" | "B" | "C" | "D"
+    min_compensation: number;
+    max_compensation: number;
+    start_date: string;             // "2026-04-05"
+    end_date: string;
+    care_category: string;
+    skills_needed: string[];
+    medical_specialties_needed: string | null;
+    city: string;
+    area: string;
+    status: string;
+    client_name: string;
+    age: number;
+    gender: string;
 }
 
+interface BookedDate {
+    booked_date: string;            // "2026-04-05"
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
 ];
 
+const DAY_CATEGORY_LABEL: Record<string, string> = {
+    A: "3 Hours",
+    B: "6 Hours",
+    C: "12 Hours",
+    D: "24 Hours",
+};
+
+/** "2026-04-05" → { year:2026, month:4, day:5 } */
+const parseDate = (iso: string) => {
+    const [y, m, d] = iso.split("-").map(Number);
+    return { year: y, month: m, day: d };
+};
+
+/** Format "2026-04-05" → "April 05, 2026" */
+const formatDate = (iso: string) => {
+    const { year, month, day } = parseDate(iso);
+    return `${MONTH_NAMES[month - 1]} ${String(day).padStart(2, "0")}, ${year}`;
+};
+
+// ── Component ──────────────────────────────────────────────────────────────────
 export default function RequestsPage() {
-    const { initialRequests, initialBookedDates } = useLoaderData();
+    const navigate = useNavigate();
+    const today    = new Date();
 
-    const today = new Date();
+    const [requests,     setRequests]     = useState<IncomingRequest[]>([]);
+    const [bookedDates,  setBookedDates]  = useState<string[]>([]);   // ["2026-04-05", ...]
+    const [loading,      setLoading]      = useState(true);
+    const [error,        setError]        = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-    const [requests, setRequests] = useState<{
-        id: number; patientName: string; gender: string; city: string; area: string; phone: string;
-        serviceType: string; requirements: string[]; rateOffered: string;
-        date: string; month: number; year: number; dayNumber: number; duration: string;
-    }[]>(initialRequests);
-
-    const [bookedDates, setBookedDates]     = useState<string[]>(initialBookedDates);
-    const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1); // 1–12
+    const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
     const [calendarYear,  setCalendarYear]  = useState(today.getFullYear());
 
-    // ── helpers ────────────────────────────────────────────────────────────────
-    const dateKey = (year: number, month: number, day: number) => `${year}-${month}-${day}`;
+    // ── Fetch incoming requests + caregiver availability ───────────────────────
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                // 1. Incoming requests matched to this caregiver
+                const { data: reqData } = await axiosInstance.get("/requests/incoming");
+                const incoming: IncomingRequest[] = (reqData.requests ?? []).map(
+                    (r: IncomingRequest) => ({
+                        ...r,
+                        skills_needed:
+                            typeof r.skills_needed === "string"
+                                ? JSON.parse(r.skills_needed)
+                                : r.skills_needed ?? [],
+                    })
+                );
+                setRequests(incoming);
 
-    const isDayBooked  = (day: number) =>
-        bookedDates.includes(dateKey(calendarYear, calendarMonth, day));
+                // 2. Caregiver's own availability (booked dates) from the same endpoint
+                //    GET /api/requests/caregiver-availability/:caregiverId
+                //    — but we have the caregiverId in reqData
+                if (reqData.caregiverId) {
+                    const { data: availData } = await axiosInstance.get(
+                        `/requests/caregiver-availability/${reqData.caregiverId}`
+                    );
+                    setBookedDates(
+                        (availData.bookedDates ?? []).map((b: BookedDate | string) =>
+                            typeof b === "string" ? b : b.booked_date
+                        )
+                    );
+                }
+            } catch (err: unknown) {
+                const message =
+                    err instanceof Error ? err.message : "Failed to load requests";
+                setError(message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
-    const isRequestDayBooked = (r: typeof requests[0]) =>
-        bookedDates.includes(dateKey(r.year, r.month, r.dayNumber));
-
-    // ── actions ────────────────────────────────────────────────────────────────
-    const handleAction = (id: number, month: number, year: number, day: number, intent: string) => {
-        if (intent === "accept") {
-            setBookedDates(prev => [...prev, dateKey(year, month, day)]);
-        }
-        setRequests(prev => prev.filter(r => r.id !== id));
+    // ── Calendar helpers ───────────────────────────────────────────────────────
+    const isDayBooked = (day: number) => {
+        const key = `${calendarYear}-${String(calendarMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        return bookedDates.includes(key);
     };
 
-    // ── calendar math ──────────────────────────────────────────────────────────
+    /** True if ANY day in the request's date range is already booked */
+    const isRequestConflict = (req: IncomingRequest) => {
+        const start  = new Date(req.start_date);
+        const end    = new Date(req.end_date);
+        const cursor = new Date(start);
+        while (cursor <= end) {
+            const key = cursor.toISOString().split("T")[0];
+            if (bookedDates.includes(key)) return true;
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return false;
+    };
+
     const daysInMonth    = new Date(calendarYear, calendarMonth, 0).getDate();
-    const firstDayOfWeek = new Date(calendarYear, calendarMonth - 1, 1).getDay(); // 0 = Sunday
+    const firstDayOfWeek = new Date(calendarYear, calendarMonth - 1, 1).getDay();
 
     const goToPrevMonth = () => {
         if (calendarMonth === 1) { setCalendarMonth(12); setCalendarYear(y => y - 1); }
@@ -69,7 +139,71 @@ export default function RequestsPage() {
         else setCalendarMonth(m => m + 1);
     };
 
-    // ── render ─────────────────────────────────────────────────────────────────
+    // ── Accept ─────────────────────────────────────────────────────────────────
+    const handleAccept = async (req: IncomingRequest) => {
+        setActionLoading(req.request_id);
+        try {
+            const { data } = await axiosInstance.post(`/requests/${req.request_id}/accept`);
+
+            // Add newly booked dates to local state so calendar updates instantly
+            const newDates: string[] = data.bookedDates ?? [];
+            setBookedDates(prev => [...new Set([...prev, ...newDates])]);
+            setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+        } catch (err: unknown) {
+            const msg =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                ?? "Failed to accept request";
+            alert(msg);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ── Decline ────────────────────────────────────────────────────────────────
+    const handleDecline = async (req: IncomingRequest) => {
+        setActionLoading(req.request_id);
+        try {
+            await axiosInstance.post(`/requests/${req.request_id}/decline`);
+            setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+        } catch (err: unknown) {
+            const msg =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+                ?? "Failed to decline request";
+            alert(msg);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ── Loading / Error states ─────────────────────────────────────────────────
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+                    <p className="text-sm font-semibold text-slate-500">Loading requests…</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-white">
+                <div className="rounded-2xl bg-red-50 p-8 text-center ring-1 ring-red-200">
+                    <p className="text-sm font-bold text-red-600">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 rounded-xl bg-red-500 px-6 py-2 text-xs font-black text-white hover:bg-red-600"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
     return (
         <div className="relative min-h-screen origin-top bg-white font-sans">
             {/* Background gradient */}
@@ -99,11 +233,24 @@ export default function RequestsPage() {
 
                     {/* ── Requests List ── */}
                     <div className="space-y-4 lg:col-span-8">
+
+                        {requests.length === 0 && (
+                            <div className="rounded-[2.5rem] bg-white p-12 text-center shadow-xl ring-1 ring-blue-100">
+                                <p className="text-sm font-bold text-slate-400">No incoming requests at the moment.</p>
+                            </div>
+                        )}
+
                         {requests.map((req) => {
-                            const alreadyBooked = isRequestDayBooked(req);
+                            const conflict    = isRequestConflict(req);
+                            const isActing    = actionLoading === req.request_id;
+                            const skills: string[] =
+                                typeof req.skills_needed === "string"
+                                    ? JSON.parse(req.skills_needed)
+                                    : req.skills_needed ?? [];
+
                             return (
                                 <div
-                                    key={req.id}
+                                    key={req.request_id}
                                     className="group rounded-[2.5rem] bg-white p-6 shadow-xl shadow-blue-900/5 ring-1 ring-blue-100 transition-all hover:ring-emerald-300"
                                 >
                                     <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
@@ -115,20 +262,31 @@ export default function RequestsPage() {
                                         </div>
 
                                         <div className="flex-1">
-                                            {/* Name + Service Type + Booked warning */}
+                                            {/* Name + Service Type + Conflict warning */}
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <h4 className="text-xl font-semibold text-slate-700">{req.patientName}</h4>
+                                                <h4 className="text-xl font-semibold text-slate-700">{req.client_name}</h4>
                                                 <span className="rounded-lg bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                                                    {req.serviceType}
+                                                    {req.service_type}
                                                 </span>
-                                                {alreadyBooked && (
+                                                <span className="rounded-lg bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600">
+                                                    {req.care_category}
+                                                </span>
+                                                {conflict && (
                                                     <span className="rounded-lg bg-red-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-red-500">
                                                         Day Taken
                                                     </span>
                                                 )}
+                                                {/* Payment status badge — navigates to payment page */}
+                                                <button
+                                                    onClick={() => navigate(`/payment/${req.request_id}`)}
+                                                    className="rounded-lg bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700 transition hover:bg-amber-200"
+                                                    title="View payment details"
+                                                >
+                                                    {req.status}
+                                                </button>
                                             </div>
 
-                                            {/* Location + Phone + Gender */}
+                                            {/* Location + Gender + Age */}
                                             <div className="mt-2 flex flex-wrap items-center gap-4 text-[14px] font-semibold text-slate-500">
                                                 <span className="flex items-center gap-1">
                                                     <svg className="h-3.5 w-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,11 +295,8 @@ export default function RequestsPage() {
                                                     </svg>
                                                     {req.area}, {req.city}
                                                 </span>
-                                                <span className="flex items-center gap-1">
-                                                    <svg className="h-3.5 w-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                                    </svg>
-                                                    {req.phone}
+                                                <span className="flex items-center gap-1 text-slate-500">
+                                                    Age: <strong className="ml-1 text-slate-700">{req.age}</strong>
                                                 </span>
                                                 <span
                                                     className="text-lg leading-none"
@@ -154,7 +309,7 @@ export default function RequestsPage() {
 
                                             {/* Skills */}
                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                {req.requirements.map((skill: string) => (
+                                                {skills.map((skill: string) => (
                                                     <span
                                                         key={skill}
                                                         className="rounded-full bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-200"
@@ -162,6 +317,11 @@ export default function RequestsPage() {
                                                         {skill}
                                                     </span>
                                                 ))}
+                                                {req.medical_specialties_needed && (
+                                                    <span className="rounded-full bg-purple-50 px-3 py-1 text-[11px] font-bold text-purple-600 ring-1 ring-purple-200">
+                                                        {req.medical_specialties_needed}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {/* Date + Duration + Rate */}
@@ -172,7 +332,10 @@ export default function RequestsPage() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                         </svg>
                                                     </div>
-                                                    {req.date}
+                                                    {formatDate(req.start_date)}
+                                                    {req.start_date !== req.end_date && (
+                                                        <span className="text-slate-400">→ {formatDate(req.end_date)}</span>
+                                                    )}
                                                 </span>
                                                 <span className="flex items-center gap-2 font-black text-emerald-700">
                                                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -180,7 +343,7 @@ export default function RequestsPage() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                     </div>
-                                                    {req.duration}
+                                                    {DAY_CATEGORY_LABEL[req.day_category] ?? req.day_category}
                                                 </span>
                                                 <span className="flex items-center gap-2 font-bold text-blue-700">
                                                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-700">
@@ -188,7 +351,7 @@ export default function RequestsPage() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                         </svg>
                                                     </div>
-                                                    {req.rateOffered}
+                                                    E£ {req.min_compensation} – E£ {req.max_compensation}
                                                 </span>
                                             </div>
                                         </div>
@@ -196,21 +359,22 @@ export default function RequestsPage() {
                                         {/* Accept / Decline */}
                                         <div className="flex w-full flex-row gap-2 sm:w-auto sm:flex-col">
                                             <button
-                                                onClick={() => handleAction(req.id, req.month, req.year, req.dayNumber, "accept")}
-                                                disabled={alreadyBooked}
+                                                onClick={() => handleAccept(req)}
+                                                disabled={conflict || isActing}
                                                 className={`w-full rounded-2xl px-8 py-4 text-[12px] font-black text-white shadow-lg transition-all active:scale-95 ${
-                                                    alreadyBooked
+                                                    conflict || isActing
                                                         ? "cursor-not-allowed bg-slate-300 shadow-none"
                                                         : "bg-emerald-500 hover:bg-emerald-600"
                                                 }`}
                                             >
-                                                ACCEPT
+                                                {isActing ? "..." : "ACCEPT"}
                                             </button>
                                             <button
-                                                onClick={() => handleAction(req.id, req.month, req.year, req.dayNumber, "decline")}
-                                                className="w-full rounded-2xl border-2 border-slate-100 px-8 py-4 text-[12px] font-bold text-slate-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                                                onClick={() => handleDecline(req)}
+                                                disabled={isActing}
+                                                className="w-full rounded-2xl border-2 border-slate-100 px-8 py-4 text-[12px] font-bold text-slate-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                DECLINE
+                                                {isActing ? "..." : "DECLINE"}
                                             </button>
                                         </div>
                                     </div>
@@ -244,18 +408,16 @@ export default function RequestsPage() {
 
                             {/* Day-of-week headers */}
                             <div className="grid grid-cols-7 gap-1 text-center">
-                                {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                                {["S","M","T","W","T","F","S"].map((d, i) => (
                                     <span key={i} className="mb-1 text-[9px] font-black text-slate-400">{d}</span>
                                 ))}
 
-                                {/* Empty offset cells so day 1 lands on the right column */}
                                 {Array(firstDayOfWeek).fill(null).map((_, i) => (
                                     <div key={`empty-${i}`} />
                                 ))}
 
-                                {/* Day cells */}
                                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                                    const booked  = isDayBooked(day);
+                                    const booked = isDayBooked(day);
                                     return (
                                         <div key={day} className="relative flex items-center justify-center">
                                             <div
@@ -267,7 +429,6 @@ export default function RequestsPage() {
                                             >
                                                 {day}
                                             </div>
-
                                         </div>
                                     );
                                 })}

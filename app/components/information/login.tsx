@@ -1,5 +1,6 @@
-import { Link, Form, redirect, useActionData, useSearchParams } from "react-router"; 
-import { apiUrl } from "../../utils/api";
+import { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { clearAuth, saveToken, saveRole, saveProfile } from "~/utils/auth";
 
 export function meta() {
   return [
@@ -8,41 +9,61 @@ export function meta() {
   ];
 }
 
-export async function action({ request }: { request: Request }) {
-  const formData = await request.formData();
-  const username = formData.get("username")?.toString().trim() ?? "";
-  const password = formData.get("password")?.toString() ?? "";
-
-  if (!username || !password) {
-    return { error: "Please fill in all fields." };
-  }
-
-  try {
-    const response = await fetch(apiUrl("/api/auth/signin"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      return { error: result.message || "Invalid username or password." };
-    }
-
-    // Backend returns role directly as 'Client' or 'Caregiver'
-    return redirect(result.role === "Caregiver" ? "/dashboard/caregiver" : "/dashboard/client");
-
-  } catch (err) {
-    return { error: "Cannot connect to the server." };
-  }
-}
-
 export default function Login() {
-  const actionData = useActionData() as { error?: string };
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const justRegistered = searchParams.get("registered") === "true";
   const justReset = searchParams.get("reset") === "true";
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!username.trim() || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.message || "Invalid username or password.");
+        return;
+      }
+
+      if (!result?.token || !result?.role) {
+        setError("Unexpected server response. Please try again.");
+        return;
+      }
+
+      clearAuth();
+      saveToken(result.token);
+      saveRole(result.role);
+
+      if (result.profile && typeof result.profile === "object") {
+        saveProfile(result.profile);
+      }
+
+      navigate(result.role === "Caregiver" ? "/dashboard/caregiver" : "/dashboard/client");
+    } catch {
+      setError("Cannot connect to the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-linear-to-br from-blue-200 via-white to-emerald-200">
@@ -53,69 +74,86 @@ export default function Login() {
               Sign In
             </span>
           </h2>
-          
+
           <div className="mt-8">
             <div className="rounded-3xl bg-white/90 p-8 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-              
-              {actionData?.error && (
-                <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm font-semibold text-red-600 border border-red-100">
-                  {actionData.error}
-                </div>
-              )}
-              {!actionData?.error && (justRegistered || justReset) && (
+
+              {justRegistered && (
                 <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">
-                  {justRegistered
-                    ? "Registration completed. Please sign in."
-                    : "Password updated successfully. Please sign in."}
+                  Account created successfully! Please sign in.
                 </div>
               )}
 
-              <Form method="post" className="space-y-6">
+              {justReset && (
+                <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-center text-sm font-semibold text-emerald-700">
+                  Password reset successfully! Please sign in.
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-center text-sm font-semibold text-red-600">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-blue-800">Username</label>
                   <input
-                    name="username" 
                     type="text"
                     required
                     placeholder="Enter your username"
-                    className="mt-2 block w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="mt-2 block w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-bold text-blue-800">Password</label>
                   <input
-                    name="password" 
                     type="password"
                     required
                     minLength={8}
                     placeholder="********"
-                    className="mt-2 block w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-2 block w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <Link to="/forgot-password" className="text-xs font-bold text-blue-500 transition-colors hover:text-emerald-600 hover:underline">
+
+                <div className="flex items-center justify-between">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-bold text-blue-500 transition-colors hover:text-emerald-600 hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 </div>
-                
+
                 <button
                   type="submit"
-                  className="w-full cursor-pointer rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={loading}
+                  className="w-full cursor-pointer rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
                 >
-                  Sign In
+                  {loading ? "Signing in..." : "Sign In"}
                 </button>
-              </Form>
+              </form>
 
               <div className="mt-8 flex flex-col items-center gap-2 border-t border-gray-200 pt-6 text-sm text-gray-600">
                 <div>
                   New to CareLink?{" "}
-                  <Link to="/get-started" className="font-bold text-blue-600 transition-colors hover:text-teal-600 hover:underline">
+                  <Link
+                    to="/get-started"
+                    className="font-bold text-blue-600 transition-colors hover:text-teal-600 hover:underline"
+                  >
                     Create account
                   </Link>
                 </div>
-                <Link to="/" className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline">
+                <Link
+                  to="/"
+                  className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline"
+                >
                   ← Back to Home
                 </Link>
               </div>

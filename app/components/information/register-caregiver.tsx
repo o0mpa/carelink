@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
+import { apiUrl } from "../../utils/api";
 
 export function meta() {
   return [
@@ -8,12 +9,30 @@ export function meta() {
   ];
 }
 
+// DOB and Age stay in sync
+const calculateAge = (dob: string) => {
+  if (!dob) return "";
+  const today = new Date();
+  const birthDate = new Date(dob);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age < 0 ? 0 : age;
+};
+
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
   // Check if passwords match
   if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
+  }
+
+  // Backend stores skills as JSON; prevent undefined values.
+  if (formData.getAll("skills").length === 0) {
+    return { error: "Please select at least one caregiving skill." };
   }
   
   // Clean up data
@@ -42,6 +61,11 @@ export default function RegisterCaregiver() {
   const isSubmitting = navigation.state === "submitting";
 
   const [selectedCity, setSelectedCity] = useState("");
+  const [calculatedAge, setCalculatedAge] = useState<number | string>("");
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCalculatedAge(calculateAge(e.target.value));
+  };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-100 via-white to-blue-100 py-12">
@@ -119,17 +143,17 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
                   <select name="gender" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
                   </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input type="date" name="date_of_birth" required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input type="date" name="date_of_birth" required max="9999-12-31" onChange={handleDateChange} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
-                  <input type="number" name="age" min="0" max="100" required onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") { e.preventDefault(); } }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" />
+                  <input type="number" name="age" value={calculatedAge} readOnly required className="w-full cursor-not-allowed rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
@@ -146,16 +170,16 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">City</label>
                   <select name="city" required value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Select City</option>
-                    <option value="cairo">Cairo</option>
-                    <option value="giza">Giza</option>
-                    <option value="alexandria">Alexandria</option>
+                    <option value="Cairo">Cairo</option>
+                    <option value="Giza">Giza</option>
+                    <option value="Alexandria">Alexandria</option>
                   </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
                   <select name="area" required disabled={!selectedCity} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100">
                     <option value="">Select Area</option>
-                    {selectedCity === "cairo" && (
+                    {selectedCity === "Cairo" && (
                       <>
                         <option value="Nasr City">Nasr City</option>
                         <option value="Heliopolis">Heliopolis (Masr El Gedida)</option>
@@ -171,7 +195,7 @@ export default function RegisterCaregiver() {
                         <option value="Fifth Settlement">Fifth Settlement</option>
                       </>
                     )}
-                    {selectedCity === "giza" && (
+                    {selectedCity === "Giza" && (
                       <>
                         <option value="Dokki">Dokki</option>
                         <option value="Mohandessin">Mohandessin</option>
@@ -183,7 +207,7 @@ export default function RegisterCaregiver() {
                         <option value="Imbaba">Imbaba</option>
                       </>
                     )}
-                    {selectedCity === "alexandria" && (
+                    {selectedCity === "Alexandria" && (
                       <>
                         <option value="Smouha">Smouha</option>
                         <option value="Sidi Gaber">Sidi Gaber</option>
