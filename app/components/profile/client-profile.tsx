@@ -9,18 +9,18 @@ export function meta() {
 }
 
 type ProfileUser = {
-    name: string;
-    role: string;
-    email: string;
-    phone: string;
-    age: string;
-    gender: string;
-    location: {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  age: string;
+  gender: string;
+  location: {
     city: string;
     area: string;
     address: string;
-    };
-    medical: {
+  };
+  medical: {
     bloodType: string;
     allergies: string;
     doctor: string;
