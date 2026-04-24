@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
-import { apiUrl } from "../../utils/api";
 
 export function meta() {
   return [
@@ -22,7 +21,7 @@ export async function action({ request }: { request: Request }) {
   formData.delete("confirmPassword");
 
   try {
-    const response = await fetch(`${apiUrl}/api/auth/signup-caregiver`, {
+    const response = await fetch("http://localhost:5000/api/auth/signup-caregiver", {
       method: "POST",
       // NO "Content-Type" header. The browser sets it to multipart/form-data automatically.
       body: formData, 
@@ -168,8 +167,9 @@ export default function RegisterCaregiver() {
                     name="age" 
                     required 
                     value={age}
-                    readOnly
-                    className="w-full rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    onChange={(e) => setAge(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") { e.preventDefault(); } }} 
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" 
                   />
                 </div>
                 <div>
