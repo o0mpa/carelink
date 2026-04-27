@@ -5,25 +5,6 @@ export function meta() {
     return [{ title: "Edit Profile - CareLink" }];
 }
 
-export async function loader() {
-    return {
-    user: {
-        email: "",
-        phone: "",
-        age: "",
-        gender: "",
-        city: "",
-        area: "",
-        address: "",
-        bloodType: "",
-        allergies: "",
-        doctor: "",
-        facility: "",
-        skills: [],
-        specialties: ""
-    }
-    };
-}
 
 export async function action() {
     return redirect("/profile/client");

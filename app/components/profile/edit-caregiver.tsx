@@ -4,25 +4,6 @@ export function meta() {
     return [{title: "Edit Professional Profile - CareLink"}];
 }
 
-export async function loader() {
-    return {
-    user: {
-        email: "",
-        phone: "",
-        age: "",
-        gender: "",
-        serviceArea: "",
-        salaries: {
-        catA: "",
-        catB: "",
-        catC: "",
-        catD: ""
-        },
-        skills: [],
-        specialties: ""
-    }
-    };
-}
 
 export async function action() {
     return redirect("/profile/caregiver");
