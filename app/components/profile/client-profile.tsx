@@ -107,7 +107,7 @@ const mapProfile = (profile: Record<string, unknown>): ProfileUser => ({
     facility: toText(profile.doctor_facility),
   },
   careNeeds: {
-    skills: parseArray(profile.skills),
+    skills: parseArray(profile.skills_needed),
     specialties: parseArray(profile.medical_specialties_required),
   },
   emergency: {
@@ -143,8 +143,12 @@ export default function ClientProfile() {
 
     return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
-        <main className="container mx-auto px-4 py-10 sm:px-6 md:px-10">
+        <main className="container mx-auto px-4 py-4 sm:px-6 md:px-10">
         <div className="mx-auto max-w-5xl">
+                    <Link to="/dashboard/client" className="inline-flex items-center gap-2 text-sm py-3 font-bold text-blue-500 transition-colors hover:text-blue-900 hover:underline">
+            ← Back to Dashboard
+          </Link>
+            
             
           {/* Profile Header Card */}
             <div className="mb-6 flex flex-col items-center justify-between rounded-3xl bg-white/90 p-8 shadow-lg backdrop-blur-md ring-2 ring-blue-100 sm:flex-row sm:p-10">
@@ -172,7 +176,8 @@ export default function ClientProfile() {
             </div>
             
             {/* Buttons */}
-            <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-0 sm:justify-end">
+            {/* <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-0 sm:justify-end"> */}
+                        <div className="mt-6 flex flex-col gap-3 sm:mt-0">
             <Link 
                     to="/profile/client/edit"
                     className="flex items-center justify-center rounded-xl border-2 border-blue-600 bg-transparent px-5 py-2.5 text-sm font-bold text-blue-600 transition-all hover:bg-blue-50 active:scale-[0.98]"
@@ -180,20 +185,23 @@ export default function ClientProfile() {
                     Edit Profile
             </Link>
 
+
                 <Link 
-                to="/forgot-password"
+                to="/change-password"
                 className="flex items-center justify-center rounded-xl border-2 border-orange-500 bg-transparent px-5 py-2.5 text-sm font-bold text-orange-500 transition-all hover:bg-orange-50 active:scale-[0.98]"
                 >
                 change Password
                 </Link>
-
-                <Form method="post" action="/logout">
-                <button 
-                    type="submit"
-                    className="flex w-full items-center justify-center rounded-xl border-2 border-red-500 bg-transparent px-5 py-2.5 text-sm font-bold text-red-500 transition-all hover:bg-red-50 active:scale-[0.98]"
-                >
-                    Logout
-                </button>
+                <Form
+                method="post" action="/logout">
+              <Link to="/login" className="w-full">
+          <button
+          type="button"
+      className="flex w-full items-center justify-center rounded-xl border-2 border-red-500 bg-transparent px-5 py-2.5 text-sm font-bold text-red-500 transition-all hover:bg-red-50 active:scale-[0.98]"
+      >
+        Logout
+      </button>
+      </Link>
                 </Form>
             </div>
             </div>

@@ -12,15 +12,13 @@ export default [
   route("register/caregiver", "components/information/register-caregiver.tsx"),
   route("login", "components/information/login.tsx"),
   route("forgot-password", "components/information/forgot-password.tsx"),
+  route("change-password", "components/information/change-password.tsx"),
 
   // Profile
   route("profile/client", "components/profile/client-profile.tsx"),
   route("profile/client/edit", "components/profile/edit-client.tsx"), 
   route("profile/caregiver", "components/profile/caregiver-profile.tsx"),
-  route("profile/caregiver/edit", "components/profile/edit-caregiver.tsx"),
-  
-  // Chat Interface
-  route("profile/chat", "components/profile/chat.tsx"),
+  route("profile/caregiver/edit", "components/profile/edit-caregiver.tsx"), 
 
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
@@ -32,5 +30,9 @@ export default [
   
   // Status Tracking Pages
   route("requests/client", "components/requests/client-requests.tsx"),
-  route("requests/caregiver", "components/requests/requests-incoming.tsx"),
+  route("requests-incoming", "components/requests/requests-incoming.tsx"),
+  // Payment Flow
+  route("payment/:requestId", "components/payment/payment-form.tsx"),
+  route("payment-result", "components/payment/payment-result.tsx"),  
+
 ] satisfies RouteConfig;

@@ -2,19 +2,60 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import apiClient from '../../utils/apiclient';
 
-interface PaymentFormProps {
-  // Optional - you can pass data from parent if needed
+// ─── React Router v7 requires this on every route file ──────────────────────
+export function loader() {
+  return null;
 }
 
-interface RequestDetails {
-  requestId: number;
-  caregiverRate: number;
-  totalAmount: number;
-  days: number;
-  status: string;
-  startDate: string;
-  endDate: string;
-}
+// ════════════════════════════════════════════════════════════════════════════
+// 🔧 DEV FLAGS — set both to false before going to production
+//
+//   USE_MOCK   = true  → uses fake data below, no backend calls
+//   DEV_BYPASS = true  → skips token check (use when you have no DB yet)
+// ════════════════════════════════════════════════════════════════════════════
+const USE_MOCK   = true;
+const DEV_BYPASS = true;
+// ════════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════════
+// 🧪 MOCK SCENARIO
+//
+// Change MOCK_SCENARIO to one of these values to test each screen:
+//
+//   'accepted_no_upfront'
+//     → Request is Accepted, client hasn't paid anything yet
+//     → Shows: upfront amount input (optional) + Skip button + Pay button
+//     → To test: change to this value, save, refresh page
+//
+//   'accepted_upfront_paid'
+//     → Request is Accepted, client already paid an upfront amount
+//     → Shows: "Upfront paid, remaining due after service ends" — NO pay button
+//     → To test: change to this value, save, refresh page
+//
+//   'completed_no_upfront'
+//     → Service is Completed, client paid nothing before
+//     → Shows: full total amount as final payment required
+//     → To test: change to this value, save, refresh page
+//
+//   'completed_upfront_paid'
+//     → Service is Completed, client paid upfront before
+//     → Shows: remaining balance (total minus upfront) as final payment
+//     → To test: change to this value, save, refresh page
+//
+//   'completed_fully_paid'
+//     → Service is Completed, everything is already paid
+//     → Shows: green "Payment Complete" screen
+//     → To test: change to this value, save, refresh page
+// ════════════════════════════════════════════════════════════════════════════
+type MockScenario =
+  | 'accepted_no_upfront'
+  | 'accepted_upfront_paid'
+  | 'completed_no_upfront'
+  | 'completed_upfront_paid'
+  | 'completed_fully_paid';
+
+const MOCK_SCENARIO: MockScenario = 'accepted_no_upfront';
+// ════════════════════════════════════════════════════════════════════════════
 
 interface PaymentStatus {
   totalAmount: number;
@@ -23,346 +64,509 @@ interface PaymentStatus {
   payments: Array<{
     payment_id: number;
     amount: number;
-    payment_phase: string;
-    status: string;
+    payment_phase: string; // 'Upfront' | 'Final'
+    status: string;        // 'CAPTURED' | 'INITIATED' | 'FAILED'
     created_at: string;
   }>;
 }
 
-export default function PaymentForm({}: PaymentFormProps) {
-  const { requestId } = useParams<{ requestId: string }>();
+// ════════════════════════════════════════════════════════════════════════════
+// 🧪 MOCK DATA — what the backend would return for each scenario
+// ════════════════════════════════════════════════════════════════════════════
+const MOCK_DATA: Record<MockScenario, {
+  requestStatus: 'Accepted' | 'Completed';
+  paymentStatus: PaymentStatus;
+}> = {
+  accepted_no_upfront: {
+    requestStatus: 'Accepted',
+    paymentStatus: {
+      totalAmount: 1000,
+      totalPaid:   0,
+      remaining:   1000,
+      payments:    [],
+    },
+  },
+  accepted_upfront_paid: {
+    requestStatus: 'Accepted',
+    paymentStatus: {
+      totalAmount: 3000,
+      totalPaid:   800,
+      remaining:   2200,
+      payments: [{
+        payment_id: 1, amount: 800, payment_phase: 'Upfront',
+        status: 'CAPTURED', created_at: '2025-06-01T10:00:00.000Z',
+      }],
+    },
+  },
+  completed_no_upfront: {
+    requestStatus: 'Completed',
+    paymentStatus: {
+      totalAmount: 3000,
+      totalPaid:   0,
+      remaining:   3000,
+      payments:    [],
+    },
+  },
+  completed_upfront_paid: {
+    requestStatus: 'Completed',
+    paymentStatus: {
+      totalAmount: 3000,
+      totalPaid:   800,
+      remaining:   2200,
+      payments: [{
+        payment_id: 1, amount: 800, payment_phase: 'Upfront',
+        status: 'CAPTURED', created_at: '2025-06-01T10:00:00.000Z',
+      }],
+    },
+  },
+  completed_fully_paid: {
+    requestStatus: 'Completed',
+    paymentStatus: {
+      totalAmount: 3000,
+      totalPaid:   3000,
+      remaining:   0,
+      payments: [
+        { payment_id: 1, amount: 800,  payment_phase: 'Upfront', status: 'CAPTURED', created_at: '2025-06-01T10:00:00.000Z' },
+        { payment_id: 2, amount: 2200, payment_phase: 'Final',   status: 'CAPTURED', created_at: '2025-06-10T14:00:00.000Z' },
+      ],
+    },
+  },
+};
+// ════════════════════════════════════════════════════════════════════════════
+
+export default function PaymentForm() {
+  const { requestId: paramRequestId } = useParams<{ requestId: string }>();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const requestId = DEV_BYPASS ? (paramRequestId ?? '1') : paramRequestId;
 
+  const [loading, setLoading]             = useState(true);
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
-  const [paymentType, setPaymentType] = useState<'upfront' | 'final'>('upfront');
-  const [upfrontAmount, setUpfrontAmount] = useState<string>('');
+  const [requestStatus, setRequestStatus] = useState<'Accepted' | 'Completed' | null>(null);
+  const [upfrontAmount, setUpfrontAmount] = useState('');
 
-  // Fetch payment status on mount
   useEffect(() => {
-    if (!requestId) {
-      console.error('❌ No requestId found in URL params');
+    if (!DEV_BYPASS && !requestId) {
       setError('No request ID provided');
       setLoading(false);
       return;
     }
 
-    const fetchPaymentStatus = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Fetching payment status for requestId:', requestId);
-        console.log('🔑 Token:', localStorage.getItem('carelink_token') ? 'EXISTS' : 'MISSING');
-        
-        const response = await apiClient.get(`/payments/status/${requestId}`);
-        
-        console.log('✅ Payment status received:', response.data);
-        setPaymentStatus(response.data);
 
-        // Check if upfront already paid
-        const hasUpfront = response.data.payments.some(
-          (p: any) => p.payment_phase === 'Upfront' && p.status === 'CAPTURED'
-        );
+        let payStatus: PaymentStatus;
+        let reqStatus: 'Accepted' | 'Completed';
 
-        console.log('💰 Has upfront payment:', hasUpfront);
-
-        // Auto-select payment type based on status
-        if (hasUpfront && response.data.remaining > 0) {
-          setPaymentType('final');
-          console.log('🎯 Auto-selected FINAL payment');
+        // ── MOCK ──────────────────────────────────────────────────────────
+        if (USE_MOCK) {
+          await new Promise((r) => setTimeout(r, 600));
+          payStatus = MOCK_DATA[MOCK_SCENARIO].paymentStatus;
+          reqStatus = MOCK_DATA[MOCK_SCENARIO].requestStatus;
         }
+        // ── REAL API ──────────────────────────────────────────────────────
+        else {
+          // GET /api/payments/status/:requestId
+          // Returns: { payments, totalAmount, totalPaid, remaining }
+          const payRes = await apiClient.get(`/payments/status/${requestId}`);
+          payStatus = payRes.data;
+
+          // Derive request status from payments array:
+          // If any 'Final' phase payment exists → backend only creates it for Completed requests
+          // Otherwise → still Accepted
+          //
+          // ⚠️ If you add GET /api/care-requests/:id later, replace with:
+          //   const reqRes = await apiClient.get(`/care-requests/${requestId}`);
+          //   reqStatus = reqRes.data.status;
+          const hasFinal = payStatus.payments.some((p) => p.payment_phase === 'Final');
+          reqStatus = hasFinal ? 'Completed' : 'Accepted';
+        }
+        // ─────────────────────────────────────────────────────────────────
+
+        setPaymentStatus(payStatus);
+        setRequestStatus(reqStatus);
       } catch (err: any) {
-        console.error('❌ Error fetching payment status:', err);
-        console.error('❌ Response data:', err.response?.data);
-        console.error('❌ Status code:', err.response?.status);
-        
-        const errorMessage = err.response?.data?.message || 'Failed to load payment information';
-        setError(errorMessage);
-        
-        // Show more detailed error in console
-        if (err.response?.status === 401) {
-          console.error('🚫 UNAUTHORIZED - Token might be invalid or expired');
-        } else if (err.response?.status === 404) {
-          console.error('🚫 NOT FOUND - Request or client profile not found');
-        }
+        console.error('❌ fetchData error:', err);
+        setError(err.response?.data?.message || 'Failed to load payment information');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPaymentStatus();
+    fetchData();
   }, [requestId]);
 
   const handlePayment = async () => {
     if (!requestId) return;
-
     try {
       setSubmitting(true);
       setError(null);
 
+      // ── MOCK ──────────────────────────────────────────────────────────
+      if (USE_MOCK) {
+        await new Promise((r) => setTimeout(r, 800));
+        // Simulates TAP redirecting back to payment-result
+        window.location.href = `/payment-result?requestId=${requestId}&tap_id=mock_tap_charge_12345`;
+        return;
+      }
+      // ── REAL API ──────────────────────────────────────────────────────
       let response;
 
-      if (paymentType === 'upfront') {
-        // Validate upfront amount
+      if (requestStatus === 'Accepted') {
+        // Upfront payment — POST /api/payments/pay-upfront
         const amount = parseFloat(upfrontAmount);
-        if (!amount || amount <= 0) {
-          setError('Please enter a valid amount');
+        if (!amount || amount < 50) {
+          setError('Minimum upfront amount is 50 EGP');
           setSubmitting(false);
           return;
         }
-
         if (paymentStatus && amount >= paymentStatus.totalAmount) {
           setError(`Upfront amount must be less than total (${paymentStatus.totalAmount} EGP)`);
           setSubmitting(false);
           return;
         }
-
-        console.log('💳 Initiating UPFRONT payment:', amount, 'EGP');
         response = await apiClient.post('/payments/pay-upfront', {
-          requestId: parseInt(requestId),
+          requestId:     parseInt(requestId),
           upfrontAmount: amount,
         });
       } else {
-        console.log('💳 Initiating FINAL payment');
-        // Final payment
+        // Final payment — POST /api/payments/pay-final
         response = await apiClient.post('/payments/pay-final', {
           requestId: parseInt(requestId),
         });
       }
 
-      console.log('✅ Payment response:', response.data);
-
-      // Redirect to TAP payment page
+      // TAP returns a redirect URL for card entry
       if (response.data.transactionUrl) {
-        console.log('🔄 Redirecting to TAP:', response.data.transactionUrl);
         window.location.href = response.data.transactionUrl;
       } else {
-        console.error('❌ No transaction URL in response');
         setError('Payment URL not received. Please try again.');
         setSubmitting(false);
       }
+      // ─────────────────────────────────────────────────────────────────
     } catch (err: any) {
-      console.error('❌ Payment error:', err);
-      console.error('❌ Response:', err.response?.data);
+      console.error('❌ handlePayment error:', err);
       setError(err.response?.data?.message || 'Payment initiation failed');
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center">
-        <div className="text-blue-900 text-xl font-semibold">Loading payment information...</div>
-      </div>
-    );
-  }
-
-  if (error && !paymentStatus) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full">
-          <div className="text-red-500 text-center mb-6 text-lg font-semibold">Error</div>
-          <div className="text-gray-700 text-center mb-6">{error}</div>
-          
-          {/* Debug info */}
-          <div className="bg-gray-100 rounded-lg p-4 mb-6 text-left">
-            <div className="text-sm text-gray-600 font-mono">
-              <div>Request ID: {requestId || 'NOT FOUND'}</div>
-              <div>Token: {localStorage.getItem('carelink_token') ? 'EXISTS' : 'MISSING'}</div>
-              <div>Role: {localStorage.getItem('carelink_role') || 'NOT SET'}</div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/dashboard/client')}
-            className="w-full bg-white border-2 border-blue-300 text-slate-500 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const hasUpfrontPaid = paymentStatus?.payments.some(
+  const upfrontCaptured = paymentStatus?.payments.some(
     (p) => p.payment_phase === 'Upfront' && p.status === 'CAPTURED'
   );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#1976D2] to-[#26C6DA] rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl font-bold">+</span>
-            </div>
-            <h1 className="text-2xl font-bold text-[#1976D2]">CareLink</h1>
+  // ── LOADING ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
+          <div className="w-14 h-14 border-4 border-[#1976D2] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-semibold">Loading payment information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── FATAL ERROR ────────────────────────────────────────────────────────────
+  if (error && !paymentStatus) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+          <div className="text-red-500 text-center mb-4 text-lg font-semibold">Error</div>
+          <div className="text-slate-700 text-center mb-6">{error}</div>
+          <div className="bg-slate-100 rounded-lg p-4 mb-6 font-mono text-sm text-slate-600 space-y-1">
+            <div>Request ID : {requestId  || 'NOT FOUND'}</div>
+            <div>Token      : {localStorage.getItem('carelink_token') ? 'EXISTS' : 'MISSING'}</div>
+            <div>Role       : {localStorage.getItem('carelink_role')  || 'NOT SET'}</div>
+            <div>DEV_BYPASS : {DEV_BYPASS ? 'ON ✓' : 'OFF'}</div>
+            <div>USE_MOCK   : {USE_MOCK   ? 'ON ✓' : 'OFF'}</div>
           </div>
           <button
             onClick={() => navigate('/dashboard/client')}
-            className="text-[#1976D2] hover:text-[#1565C0] font-semibold"
+            className="w-full border-2 border-blue-300 text-slate-500 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all"
           >
             Back to Dashboard
           </button>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      {/* Main Content */}
-      <main className="max-w-2xl mx-auto px-4 py-12">
+  // ── MAIN PAGE ──────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200">
+
+      {/* Dev banner */}
+      {(USE_MOCK || DEV_BYPASS) && (
+        <div className="bg-yellow-400 text-yellow-900 text-sm font-semibold py-2 px-4 flex flex-wrap justify-center gap-x-6 gap-y-1 text-center">
+          {USE_MOCK   && <span> MOCK — scenario: <code className="font-mono">{MOCK_SCENARIO}</code></span>}
+          {DEV_BYPASS && <span> DEV BYPASS — requestId: <code className="font-mono">{requestId}</code></span>}
+          {USE_MOCK && (
+            <span className="w-full text-xs font-normal mt-0.5">
+              TAP sandbox test card: <code className="font-mono">4111 1111 1111 1111</code> — Exp: any future date — CVV: any 3 digits — OTP: <code className="font-mono">000000</code>
+            </span>
+          )}
+        </div>
+      )}
+
+      <main className="max-w-2xl mx-auto px-10 py-7">
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Title */}
-          <h2 className="text-3xl font-bold text-[#1976D2] mb-2 text-center">
-            Payment
-          </h2>
-          <p className="text-gray-600 text-center mb-8">
-            Complete your payment to continue with your care request
-          </p>
 
-          {/* Payment Summary */}
-          {paymentStatus && (
-            <div className="bg-gray-50 rounded-xl p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Service Cost:</span>
-                  <span className="font-semibold text-gray-800">{paymentStatus.totalAmount} EGP</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Already Paid:</span>
-                  <span className="font-semibold text-green-600">{paymentStatus.totalPaid} EGP</span>
-                </div>
-                <div className="border-t pt-3 flex justify-between">
-                  <span className="text-gray-800 font-semibold">Remaining Balance:</span>
-                  <span className="font-bold text-[#1976D2] text-lg">{paymentStatus.remaining} EGP</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Payment Type Selection */}
-          {!hasUpfrontPaid && paymentStatus && paymentStatus.remaining > 0 && (
-            <div className="mb-8">
-              <label className="block text-gray-700 font-semibold mb-3">
-                Select Payment Type
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setPaymentType('upfront')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentType === 'upfront'
-                      ? 'border-[#1976D2] bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-semibold text-gray-800 mb-1">Upfront Payment</div>
-                  <div className="text-sm text-gray-600">Pay a partial amount now</div>
-                </button>
-                <button
-                  onClick={() => setPaymentType('final')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    paymentType === 'final'
-                      ? 'border-[#1976D2] bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-semibold text-gray-800 mb-1">Full Payment</div>
-                  <div className="text-sm text-gray-600">Pay the entire amount</div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Upfront Amount Input */}
-          {paymentType === 'upfront' && !hasUpfrontPaid && (
-            <div className="mb-8">
-              <label htmlFor="upfrontAmount" className="block text-gray-700 font-semibold mb-2">
-                Enter Upfront Amount (EGP)
-              </label>
-              <input
-                type="number"
-                id="upfrontAmount"
-                value={upfrontAmount}
-                onChange={(e) => setUpfrontAmount(e.target.value)}
-                placeholder="Enter amount"
-                min="1"
-                max={paymentStatus ? paymentStatus.totalAmount - 1 : undefined}
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-[#1976D2] focus:outline-none text-lg"
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                Must be less than total amount ({paymentStatus?.totalAmount} EGP)
-              </p>
-            </div>
-          )}
-
-          {/* Final Payment Info */}
-          {paymentType === 'final' && paymentStatus && (
-            <div className="mb-8 bg-blue-50 border-2 border-[#1976D2] rounded-xl p-6">
-              <h4 className="font-semibold text-[#1976D2] mb-2">Final Payment</h4>
-              <p className="text-gray-700 mb-4">
-                You will pay the remaining balance of <span className="font-bold">{paymentStatus.remaining} EGP</span>
-              </p>
-              <p className="text-sm text-gray-600">
-                This will complete your payment for this care request.
-              </p>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-lg p-4 text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Submit Button */}
-          {paymentStatus && paymentStatus.remaining > 0 && (
-            <button
-              onClick={handlePayment}
-              disabled={submitting}
-              className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all ${
-                submitting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
-              }`}
-            >
-              {submitting ? 'Processing...' : `Proceed to Payment`}
-            </button>
-          )}
-
-          {/* Fully Paid Message */}
-          {paymentStatus && paymentStatus.remaining <= 0 && (
-            <div className="text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-green-600 mb-2">Payment Complete!</h3>
-              <p className="text-gray-600 mb-6">This request has been fully paid.</p>
-              <button
-                onClick={() => navigate('/dashboard/client')}
-                className="bg-[#1976D2] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#1565C0] transition-colors"
-              >
-                Back to Dashboard
-              </button>
-            </div>
-          )}
-
-          {/* Security Note */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="flex items-start gap-3 text-sm text-gray-600">
-              <svg className="w-5 h-5 text-[#1976D2] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          {/* Icon + Title */}
+          <div className="flex flex-col items-center mb-6">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-blue-600 shadow-md ring-1 ring-blue-200 mb-3">
+              <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
               </svg>
-              <p>
-                You will be redirected to our secure payment gateway (TAP) to complete your transaction.
-                Your payment information is encrypted and secure.
-              </p>
-            </div>
+            </span>
+            <h2 className="text-3xl font-bold bg-linear-to-r from-blue-500 to-blue-800 text-transparent bg-clip-text">
+              Payment
+            </h2>
           </div>
+
+          {/* ═══════════════════════════════════════════════════════════
+              CASE: REQUEST IS ACCEPTED
+              Upfront payment is optional.
+              If already paid upfront → waiting for service to complete.
+          ═══════════════════════════════════════════════════════════ */}
+          {requestStatus === 'Accepted' && (
+            <>
+              {/* Upfront already paid — just waiting */}
+              {upfrontCaptured && paymentStatus && (
+                <>
+                  <p className="text-slate-400 font-semibold text-center mb-4">
+                    You've paid an upfront amount. The remaining balance will be due once your service is completed.
+                  </p>
+                  <div className="bg-slate-50 rounded-xl p-4 mb-6">
+                    <h3 className="font-bold text-slate-700 mb-3">Payment Summary</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Total Service Cost:</span>
+                        <span className="font-semibold text-slate-800">{paymentStatus.totalAmount} EGP</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Upfront Paid:</span>
+                        <span className="font-semibold text-green-600">{paymentStatus.totalPaid} EGP</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between">
+                        <span className="font-bold text-slate-800">Remaining Balance:</span>
+                        <span className="font-bold text-[#1976D2] text-lg">{paymentStatus.remaining} EGP</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 border-2 border-[#1976D2] rounded-xl p-4 mb-6">
+                    <h4 className="font-semibold text-[#1976D2] mb-1">Upfront Paid ✓</h4>
+                    <p className="text-slate-600 text-sm">
+                      The remaining <span className="font-bold text-slate-800">{paymentStatus.remaining} EGP</span> will
+                      be charged once your caregiver marks the service as complete.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/dashboard/client')}
+                    className="w-full border-2 border-slate-300 text-slate-600 py-3 rounded-xl font-semibold hover:bg-slate-50 transition-all"
+                  >
+                    Back to Dashboard
+                  </button>
+                </>
+              )}
+
+              {/* No upfront yet — show optional upfront form */}
+              {!upfrontCaptured && paymentStatus && (
+                <>
+                  <p className="text-slate-400 font-semibold text-center mb-4">
+                    Your request has been accepted! You can optionally pay an upfront amount now, or pay the full amount when the service is complete.
+                  </p>
+
+                  {/* Payment Summary */}
+                  <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                    <h3 className="font-bold text-slate-700 mb-3">Payment Summary</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Total Service Cost:</span>
+                        <span className="font-semibold text-slate-800">{paymentStatus.totalAmount} EGP</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Already Paid:</span>
+                        <span className="font-semibold text-green-600">{paymentStatus.totalPaid} EGP</span>
+                      </div>
+                      <div className="border-t pt-2 flex justify-between">
+                        <span className="font-bold text-slate-800">Remaining Balance:</span>
+                        <span className="font-bold text-[#1976D2] text-lg">{paymentStatus.remaining} EGP</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Upfront amount input */}
+                  <div className="mb-2">
+                    <label htmlFor="upfrontAmount" className="block text-slate-700 font-semibold mb-2">
+                      Upfront Amount (EGP) <span className="text-slate-400 font-normal text-sm">— optional</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="upfrontAmount"
+                      value={upfrontAmount}
+                      onChange={(e) => setUpfrontAmount(e.target.value)}
+                      placeholder="Enter amount (min. 50 EGP)"
+                      min="50"
+                      max={paymentStatus.totalAmount - 1}
+                      className="w-full px-4 py-2 rounded-xl border-2 border-gray-300 text-slate-600 text-lg focus:border-blue-200 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all"
+                    />
+                    <p className="text-sm text-slate-500 mt-1">
+                      Minimum 50 EGP — must be less than {paymentStatus.totalAmount} EGP
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <div className="mb-4 bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-700 text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Pay upfront button */}
+                  <button
+                    onClick={handlePayment}
+                    disabled={submitting}
+                    className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all mt-4 ${
+                      submitting
+                        ? 'bg-slate-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
+                    }`}
+                  >
+                    {submitting ? 'Processing...' : 'Pay Upfront'}
+                  </button>
+
+                  {/* Skip button — goes back to dashboard without paying */}
+                  <button
+                    onClick={() => navigate('/dashboard/client')}
+                    disabled={submitting}
+                    className="w-full mt-3 py-3 rounded-xl font-semibold text-slate-500 border-2 border-slate-300 hover:bg-slate-50 transition-all"
+                  >
+                    Skip for Now
+                  </button>
+
+                  <p className="text-center text-xs text-slate-400 mt-3">
+                    You can always pay later from your dashboard. The full amount is due once the service is complete.
+                  </p>
+                </>
+              )}
+            </>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════
+              CASE: SERVICE IS COMPLETED
+              Client must pay. Show remaining balance if upfront was paid,
+              or full amount if nothing was paid before.
+          ═══════════════════════════════════════════════════════════ */}
+          {requestStatus === 'Completed' && paymentStatus && (
+            <>
+              {/* Still has balance to pay */}
+              {paymentStatus.remaining > 0 && (
+                <>
+                  <p className="text-slate-400 font-semibold text-center mb-4">
+                    Your service is complete. Please settle the{' '}
+                    {upfrontCaptured ? 'remaining balance' : 'full amount'} to finalize your request.
+                  </p>
+
+                  {/* Payment Summary */}
+                  <div className="bg-slate-50 rounded-xl p-4 mb-4">
+                    <h3 className="font-bold text-slate-700 mb-3">Payment Summary</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Total Service Cost:</span>
+                        <span className="font-semibold text-slate-800">{paymentStatus.totalAmount} EGP</span>
+                      </div>
+                      {/* Only show "Already Paid" row if client actually paid something before */}
+                      {upfrontCaptured && (
+                        <div className="flex justify-between">
+                          <span className="text-slate-600">Upfront Paid:</span>
+                          <span className="font-semibold text-green-600">{paymentStatus.totalPaid} EGP</span>
+                        </div>
+                      )}
+                      <div className="border-t pt-2 flex justify-between">
+                        <span className="font-bold text-slate-800">
+                          {upfrontCaptured ? 'Remaining Balance:' : 'Amount Due:'}
+                        </span>
+                        <span className="font-bold text-[#1976D2] text-lg">{paymentStatus.remaining} EGP</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-5 bg-blue-50 border-2 border-[#1976D2] rounded-xl p-4">
+                    <h4 className="font-semibold text-[#1976D2] mb-1">
+                      {upfrontCaptured ? 'Final Payment' : 'Payment Due'}
+                    </h4>
+                    <p className="text-slate-700 text-sm">
+                      {upfrontCaptured
+                        ? `You paid ${paymentStatus.totalPaid} EGP upfront. The remaining `
+                        : 'The full amount of '}
+                      <span className="font-bold">{paymentStatus.remaining} EGP</span>
+                      {upfrontCaptured
+                        ? ' is now due to fully settle this request.'
+                        : ' is due to settle this request.'}
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {error && (
+                    <div className="mb-4 bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-700 text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Pay button */}
+                  <button
+                    onClick={handlePayment}
+                    disabled={submitting}
+                    className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all ${
+                      submitting
+                        ? 'bg-slate-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
+                    }`}
+                  >
+                    {submitting ? 'Processing...' : `Pay ${paymentStatus.remaining} EGP`}
+                  </button>
+                </>
+              )}
+
+              {/* Fully paid */}
+              {paymentStatus.remaining <= 0 && (
+                <div className="text-center py-4">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-green-600 mb-2">Payment Complete!</h3>
+                  <p className="text-slate-500 mb-6">This request has been fully settled.</p>
+                  <button
+                    onClick={() => navigate('/dashboard/client')}
+                    className="bg-[#1976D2] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#1565C0] transition-colors"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Security note — only shown when there's a pay button */}
+          {paymentStatus && paymentStatus.remaining > 0 &&
+            !(requestStatus === 'Accepted' && upfrontCaptured) && (
+            <div className="mt-6 pt-5 border-t border-slate-200">
+              <div className="flex items-start gap-3 text-sm text-slate-500">
+                <svg className="w-5 h-5 text-[#1976D2] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p>You will be redirected to our secure payment gateway (TAP). Your payment information is encrypted and secure.</p>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
     </div>

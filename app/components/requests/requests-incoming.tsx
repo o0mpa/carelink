@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router";
-import axiosInstance from "~/utils/axiosinstance";
+import { Link } from "react-router";
+import axiosInstance from "~/utils/axiosinstance"; //  
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface IncomingRequest {
@@ -22,8 +22,32 @@ interface IncomingRequest {
     gender: string;
 }
 
+// Shape returned by GET /requests/:requestId/details (getRequestDetailsForCaregiver)
+interface ClientDetail {
+    request_id: number;
+    service_type: string;
+    day_category: string;
+    gender_preference: string | null;
+    min_compensation: number;
+    max_compensation: number;
+    start_date: string;
+    end_date: string;
+    care_category: string;
+    skills_needed: string | string[];
+    medical_specialties_needed: string | null;
+    city: string;
+    area: string;
+    status: string;
+    client_id: number;
+    client_name: string;
+    age: number;
+    gender: string;
+    client_city: string;
+    client_area: string;
+}
+
 interface BookedDate {
-    booked_date: string;            // "2026-04-05"
+    booked_date: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -39,54 +63,306 @@ const DAY_CATEGORY_LABEL: Record<string, string> = {
     D: "24 Hours",
 };
 
-/** "2026-04-05" → { year:2026, month:4, day:5 } */
 const parseDate = (iso: string) => {
     const [y, m, d] = iso.split("-").map(Number);
     return { year: y, month: m, day: d };
 };
 
-/** Format "2026-04-05" → "April 05, 2026" */
 const formatDate = (iso: string) => {
     const { year, month, day } = parseDate(iso);
     return `${MONTH_NAMES[month - 1]} ${String(day).padStart(2, "0")}, ${year}`;
 };
 
-// ── Component ──────────────────────────────────────────────────────────────────
-export default function RequestsPage() {
-    const navigate = useNavigate();
-    const today    = new Date();
+const parseSkills = (s: string | string[]): string[] => {
+    if (Array.isArray(s)) return s;
+    try { return JSON.parse(s); } catch { return s ? [s] : []; }
+};
 
-    const [requests,     setRequests]     = useState<IncomingRequest[]>([]);
-    const [bookedDates,  setBookedDates]  = useState<string[]>([]);   // ["2026-04-05", ...]
-    const [loading,      setLoading]      = useState(true);
-    const [error,        setError]        = useState<string | null>(null);
-    const [actionLoading, setActionLoading] = useState<number | null>(null);
+// ── MOCK DATA ──────────────────────────────────────────────────────────────────
+// const MOCK_REQUESTS: IncomingRequest[] = [
+//     {
+//         request_id: 101, service_type: "Home Care", day_category: "B",
+//         min_compensation: 300, max_compensation: 500,
+//         start_date: "2026-04-28", end_date: "2026-04-28",
+//         care_category: "Elderly Care",
+//         skills_needed: ["First Aid", "Mobility Assistance"],
+//         medical_specialties_needed: "Cardiology",
+//         city: "Cairo", area: "Maadi", status: "Pending",
+//         client_name: "Layla Hassan", age: 72, gender: "Female",
+//     },
+//     {
+//         request_id: 102, service_type: "Medical Care", day_category: "C",
+//         min_compensation: 600, max_compensation: 900,
+//         start_date: "2026-05-01", end_date: "2026-05-03",
+//         care_category: "Post-Surgery",
+//         skills_needed: ["Wound Care", "IV Administration", "Vital Signs Monitoring"],
+//         medical_specialties_needed: null,
+//         city: "Alexandria", area: "Smouha", status: "Pending",
+//         client_name: "Omar Naguib", age: 58, gender: "Male",
+//     },
+//     {
+//         request_id: 103, service_type: "Companion Care", day_category: "A",
+//         min_compensation: 150, max_compensation: 250,
+//         start_date: "2026-04-30", end_date: "2026-04-30",   // conflicts with booked date
+//         care_category: "Mental Health",
+//         skills_needed: ["Communication", "Dementia Care"],
+//         medical_specialties_needed: null,
+//         city: "Cairo", area: "Heliopolis", status: "Pending",
+//         client_name: "Fatma Khalil", age: 80, gender: "Female",
+//     },
+// ];
+
+// // Mirrors what getRequestDetailsForCaregiver returns — includes gender_preference + client_id
+// const MOCK_DETAILS: Record<number, ClientDetail> = {
+//     101: {
+//         request_id: 101, service_type: "Home Care", day_category: "B",
+//         gender_preference: "Female", min_compensation: 300, max_compensation: 500,
+//         start_date: "2026-04-28", end_date: "2026-04-28", care_category: "Elderly Care",
+//         skills_needed: ["First Aid", "Mobility Assistance"],
+//         medical_specialties_needed: "Cardiology",
+//         city: "Cairo", area: "Maadi", status: "Pending",
+//         client_id: 1, client_name: "Layla Hassan", age: 72, gender: "Female",
+//         client_city: "Cairo", client_area: "Maadi",
+//     },
+//     102: {
+//         request_id: 102, service_type: "Medical Care", day_category: "C",
+//         gender_preference: null, min_compensation: 600, max_compensation: 900,
+//         start_date: "2026-05-01", end_date: "2026-05-03", care_category: "Post-Surgery",
+//         skills_needed: ["Wound Care", "IV Administration", "Vital Signs Monitoring"],
+//         medical_specialties_needed: null,
+//         city: "Alexandria", area: "Smouha", status: "Pending",
+//         client_id: 2, client_name: "Omar Naguib", age: 58, gender: "Male",
+//         client_city: "Alexandria", client_area: "Smouha",
+//     },
+//     103: {
+//         request_id: 103, service_type: "Companion Care", day_category: "A",
+//         gender_preference: "Female", min_compensation: 150, max_compensation: 250,
+//         start_date: "2026-04-30", end_date: "2026-04-30", care_category: "Mental Health",
+//         skills_needed: ["Communication", "Dementia Care"],
+//         medical_specialties_needed: null,
+//         city: "Cairo", area: "Heliopolis", status: "Pending",
+//         client_id: 3, client_name: "Fatma Khalil", age: 80, gender: "Female",
+//         client_city: "Cairo", client_area: "Heliopolis",
+//     },
+// };
+
+// const MOCK_BOOKED_DATES: string[] = [
+//     "2026-04-25", "2026-04-26", "2026-04-30", "2026-05-05", "2026-05-06",
+// ];
+// ── END MOCK DATA ──────────────────────────────────────────────────────────────
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+function SectionTitle({ children }: { children: React.ReactNode }) {
+    return (
+        <h3 className="border-b border-slate-100 pb-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+            {children}
+        </h3>
+    );
+}
+
+function InfoTile({ label, value, icon, className = "" }: {
+    label: string; value: string; icon: string; className?: string;
+}) {
+    return (
+        <div className={`rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-100 ${className}`}>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{icon} {label}</p>
+            <p className="mt-1 text-sm font-bold text-slate-700">{value || "—"}</p>
+        </div>
+    );
+}
+
+// ── Client Detail Modal ────────────────────────────────────────────────────────
+function ClientDetailModal({
+    detail, onClose, onAccept, onDecline, isActing, conflict,
+}: {
+    detail: ClientDetail;
+    onClose: () => void;
+    onAccept: () => void;
+    onDecline: () => void;
+    isActing: boolean;
+    conflict: boolean;
+}) {
+    const skills = parseSkills(detail.skills_needed);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            style={{ backdropFilter: "blur(6px)", background: "rgba(15,23,42,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2.5rem] bg-white shadow-2xl ring-1 ring-blue-100"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div
+                    className="flex items-center gap-5 rounded-t-[2.5rem] px-8 pb-6 pt-8"
+                    style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #059669 100%)" }}
+                >
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-3xl font-black text-white shadow-lg ring-2 ring-white/30">
+                        {detail.client_name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-extrabold text-white">{detail.client_name}</h2>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <span className="rounded-lg bg-white/20 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                                {detail.care_category}
+                            </span>
+                            <span className="rounded-lg bg-white/20 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                                {detail.service_type}
+                            </span>
+                            <span
+                                className="text-xl leading-none"
+                                style={{ color: detail.gender === "Female" ? "#fce7f3" : "#dbeafe" }}
+                                title={detail.gender}
+                            >
+                                {detail.gender === "Female" ? "♀" : "♂"}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="space-y-6 px-8 py-7">
+
+                    {/* Conflict warning */}
+                    {conflict && (
+                        <div className="flex items-center gap-3 rounded-2xl bg-red-50 px-5 py-4 ring-1 ring-red-200">
+                            <span className="text-xl">⚠️</span>
+                            <p className="text-sm font-bold text-red-600">
+                                One or more dates in this request overlap with your existing bookings.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Client basics */}
+                    <div>
+                        <SectionTitle>Client Info</SectionTitle>
+                        <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                            <InfoTile label="Age" value={`${detail.age} years`} icon="🎂" />
+                            <InfoTile label="Gender" value={detail.gender} icon="👤" />
+                            <InfoTile label="Location" value={`${detail.client_area}, ${detail.client_city}`} icon="📍" />
+                        </div>
+                    </div>
+
+                    {/* Request details */}
+                    <div>
+                        <SectionTitle>Request Details</SectionTitle>
+                        <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                            <InfoTile label="Duration / Day" value={DAY_CATEGORY_LABEL[detail.day_category] ?? detail.day_category} icon="⏱" />
+                            <InfoTile label="Start Date" value={formatDate(detail.start_date)} icon="📅" />
+                            <InfoTile
+                                label="End Date"
+                                value={detail.start_date !== detail.end_date ? formatDate(detail.end_date) : "Same day"}
+                                icon="📅"
+                            />
+                            <InfoTile
+                                label="Compensation"
+                                value={`E£ ${detail.min_compensation} – E£ ${detail.max_compensation}`}
+                                icon="💰"
+                                className="col-span-2 sm:col-span-1"
+                            />
+                            {detail.gender_preference && (
+                                <InfoTile label="Gender Preference" value={detail.gender_preference} icon="🔎" />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Skills */}
+                    {skills.length > 0 && (
+                        <div>
+                            <SectionTitle>Required Skills</SectionTitle>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {skills.map((s) => (
+                                    <span key={s} className="rounded-full bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-200">
+                                        {s}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Medical specialty */}
+                    {detail.medical_specialties_needed && (
+                        <div>
+                            <SectionTitle>Medical Specialty Required</SectionTitle>
+                            <div className="mt-3">
+                                <span className="rounded-full bg-purple-50 px-4 py-1.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-200">
+                                    {detail.medical_specialties_needed}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={onAccept}
+                            disabled={conflict || isActing}
+                            className={`flex-1 rounded-2xl px-6 py-4 text-[12px] font-black text-white shadow-lg transition-all active:scale-95 ${
+                                conflict || isActing
+                                    ? "cursor-not-allowed bg-slate-300 shadow-none"
+                                    : "bg-emerald-500 hover:bg-emerald-600"
+                            }`}
+                        >
+                            {isActing ? "..." : "ACCEPT REQUEST"}
+                        </button>
+                        <button
+                            onClick={onDecline}
+                            disabled={isActing}
+                            className="flex-1 rounded-2xl border-2 border-slate-100 px-6 py-4 text-[12px] font-bold text-slate-500 transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {isActing ? "..." : "DECLINE"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+export default function RequestsPage() {
+    const today     = new Date();
+
+    const [requests,       setRequests]       = useState<IncomingRequest[]>([]);
+    const [bookedDates,    setBookedDates]    = useState<string[]>([]);
+    const [loading,        setLoading]        = useState(true);
+    const [error,          setError]          = useState<string | null>(null);
+    const [actionLoading,  setActionLoading]  = useState<number | null>(null);
+    const [selectedDetail, setSelectedDetail] = useState<ClientDetail | null>(null);
+    const [detailLoading,  setDetailLoading]  = useState(false);
 
     const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
     const [calendarYear,  setCalendarYear]  = useState(today.getFullYear());
 
-    // ── Fetch incoming requests + caregiver availability ───────────────────────
+    // ── Fetch ──────────────────────────────────────────────────────────────────
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true);
-            setError(null);
+            setLoading(true); setError(null);
             try {
-                // 1. Incoming requests matched to this caregiver
+                // ── HARDCODED ────────────────────────────────────────────────
+                // await new Promise(r => setTimeout(r, 600));
+                // setRequests(MOCK_REQUESTS);
+                // setBookedDates(MOCK_BOOKED_DATES);
+                // ── END HARDCODED ────────────────────────────────────────────
+
+                // ── REAL API ─────────────────────────────────────────────────
                 const { data: reqData } = await axiosInstance.get("/requests/incoming");
                 const incoming: IncomingRequest[] = (reqData.requests ?? []).map(
                     (r: IncomingRequest) => ({
                         ...r,
-                        skills_needed:
-                            typeof r.skills_needed === "string"
-                                ? JSON.parse(r.skills_needed)
-                                : r.skills_needed ?? [],
+                        skills_needed: typeof r.skills_needed === "string"
+                            ? JSON.parse(r.skills_needed) : r.skills_needed ?? [],
                     })
                 );
                 setRequests(incoming);
-
-                // 2. Caregiver's own availability (booked dates) from the same endpoint
-                //    GET /api/requests/caregiver-availability/:caregiverId
-                //    — but we have the caregiverId in reqData
                 if (reqData.caregiverId) {
                     const { data: availData } = await axiosInstance.get(
                         `/requests/caregiver-availability/${reqData.caregiverId}`
@@ -97,10 +373,9 @@ export default function RequestsPage() {
                         )
                     );
                 }
+                // ── END REAL API ─────────────────────────────────────────────
             } catch (err: unknown) {
-                const message =
-                    err instanceof Error ? err.message : "Failed to load requests";
-                setError(message);
+                setError(err instanceof Error ? err.message : "Failed to load requests");
             } finally {
                 setLoading(false);
             }
@@ -108,24 +383,52 @@ export default function RequestsPage() {
         fetchData();
     }, []);
 
+    // ── Open detail modal ──────────────────────────────────────────────────────
+    const handleOpenDetail = async (req: IncomingRequest) => {
+        setDetailLoading(true);
+        try {
+            // ── HARDCODED ────────────────────────────────────────────────────
+            // await new Promise(r => setTimeout(r, 300));
+            // setSelectedDetail(MOCK_DETAILS[req.request_id] ?? null);
+            // ── END HARDCODED ────────────────────────────────────────────────
+
+            // ── REAL API ─────────────────────────────────────────────────────
+            const { data } = await axiosInstance.get(`/requests/${req.request_id}/details`);
+            setSelectedDetail(data.request);
+            // ── END REAL API ─────────────────────────────────────────────────
+        } catch {
+            // Graceful fallback: build from list data we already have
+            setSelectedDetail({
+                ...req,
+                gender_preference: null,
+                client_id: 0,
+                client_city: req.city,
+                client_area: req.area,
+                skills_needed: req.skills_needed,
+            });
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
     // ── Calendar helpers ───────────────────────────────────────────────────────
     const isDayBooked = (day: number) => {
         const key = `${calendarYear}-${String(calendarMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         return bookedDates.includes(key);
     };
 
-    /** True if ANY day in the request's date range is already booked */
     const isRequestConflict = (req: IncomingRequest) => {
-        const start  = new Date(req.start_date);
-        const end    = new Date(req.end_date);
+        const start = new Date(req.start_date), end = new Date(req.end_date);
         const cursor = new Date(start);
         while (cursor <= end) {
-            const key = cursor.toISOString().split("T")[0];
-            if (bookedDates.includes(key)) return true;
+            if (bookedDates.includes(cursor.toISOString().split("T")[0])) return true;
             cursor.setDate(cursor.getDate() + 1);
         }
         return false;
     };
+
+    const isDetailConflict = (detail: ClientDetail) =>
+        isRequestConflict({ ...detail, skills_needed: parseSkills(detail.skills_needed) } as IncomingRequest);
 
     const daysInMonth    = new Date(calendarYear, calendarMonth, 0).getDate();
     const firstDayOfWeek = new Date(calendarYear, calendarMonth - 1, 1).getDay();
@@ -143,65 +446,67 @@ export default function RequestsPage() {
     const handleAccept = async (req: IncomingRequest) => {
         setActionLoading(req.request_id);
         try {
-            const { data } = await axiosInstance.post(`/requests/${req.request_id}/accept`);
+            // ── HARDCODED ────────────────────────────────────────────────────
+            // await new Promise(r => setTimeout(r, 500));
+            // const start = new Date(req.start_date), end = new Date(req.end_date);
+            // const cursor = new Date(start); const newDates: string[] = [];
+            // while (cursor <= end) { newDates.push(cursor.toISOString().split("T")[0]); cursor.setDate(cursor.getDate() + 1); }
+            // setBookedDates(prev => [...new Set([...prev, ...newDates])]);
+            // setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+            // setSelectedDetail(null);
+            // ── END HARDCODED ────────────────────────────────────────────────
 
-            // Add newly booked dates to local state so calendar updates instantly
-            const newDates: string[] = data.bookedDates ?? [];
-            setBookedDates(prev => [...new Set([...prev, ...newDates])]);
+            // ── REAL API ─────────────────────────────────────────────────────
+            const { data } = await axiosInstance.post(`/requests/${req.request_id}/accept`);
+            setBookedDates(prev => [...new Set([...prev, ...(data.bookedDates ?? [])])]);
             setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+            setSelectedDetail(null);
+            // ── END REAL API ─────────────────────────────────────────────────
         } catch (err: unknown) {
-            const msg =
-                (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-                ?? "Failed to accept request";
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to accept request";
             alert(msg);
-        } finally {
-            setActionLoading(null);
-        }
+        } finally { setActionLoading(null); }
     };
 
     // ── Decline ────────────────────────────────────────────────────────────────
     const handleDecline = async (req: IncomingRequest) => {
         setActionLoading(req.request_id);
         try {
+            // ── HARDCODED ────────────────────────────────────────────────────
+            // await new Promise(r => setTimeout(r, 400));
+            // setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+            // setSelectedDetail(null);
+            // ── END HARDCODED ────────────────────────────────────────────────
+
+            // ── REAL API ─────────────────────────────────────────────────────
             await axiosInstance.post(`/requests/${req.request_id}/decline`);
             setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
+            setSelectedDetail(null);
+            // ── END REAL API ─────────────────────────────────────────────────
         } catch (err: unknown) {
-            const msg =
-                (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-                ?? "Failed to decline request";
+            const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to decline request";
             alert(msg);
-        } finally {
-            setActionLoading(null);
-        }
+        } finally { setActionLoading(null); }
     };
 
-    // ── Loading / Error states ─────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-white">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
-                    <p className="text-sm font-semibold text-slate-500">Loading requests…</p>
-                </div>
+    // ── Loading / Error ────────────────────────────────────────────────────────
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center bg-white">
+            <div className="flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+                <p className="text-sm font-semibold text-slate-500">Loading requests…</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (error) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-white">
-                <div className="rounded-2xl bg-red-50 p-8 text-center ring-1 ring-red-200">
-                    <p className="text-sm font-bold text-red-600">{error}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="mt-4 rounded-xl bg-red-500 px-6 py-2 text-xs font-black text-white hover:bg-red-600"
-                    >
-                        Retry
-                    </button>
-                </div>
+    if (error) return (
+        <div className="flex min-h-screen items-center justify-center bg-white">
+            <div className="rounded-2xl bg-red-50 p-8 text-center ring-1 ring-red-200">
+                <p className="text-sm font-bold text-red-600">{error}</p>
+                <button onClick={() => window.location.reload()} className="mt-4 rounded-xl bg-red-500 px-6 py-2 text-xs font-black text-white hover:bg-red-600">Retry</button>
             </div>
-        );
-    }
+        </div>
+    );
 
     // ── Render ─────────────────────────────────────────────────────────────────
     return (
@@ -212,21 +517,48 @@ export default function RequestsPage() {
                 style={{ background: "linear-gradient(135deg, #0978ff 0%, #ffffff 50%, #008e5a 100%)" }}
             />
 
-            <main className="relative z-10 mx-auto max-w-7xl px-10 py-12">
-                <div className="mb-6">
+            {/* Client detail modal */}
+            {selectedDetail && (
+                <ClientDetailModal
+                    detail={selectedDetail}
+                    onClose={() => setSelectedDetail(null)}
+                    onAccept={() => {
+                        const req = requests.find(r => r.request_id === selectedDetail.request_id);
+                        if (req) handleAccept(req);
+                    }}
+                    onDecline={() => {
+                        const req = requests.find(r => r.request_id === selectedDetail.request_id);
+                        if (req) handleDecline(req);
+                    }}
+                    isActing={actionLoading === selectedDetail.request_id}
+                    conflict={isDetailConflict(selectedDetail)}
+                />
+            )}
+
+            {/* Detail loading overlay */}
+            {detailLoading && (
+                <div
+                    className="fixed inset-0 z-40 flex items-center justify-center"
+                    style={{ backdropFilter: "blur(3px)", background: "rgba(15,23,42,0.2)" }}
+                >
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+                </div>
+            )}
+
+            <main className="relative z-10 mx-auto max-w-7xl px-10 py-6">
+                <div className="mb-2">
                     <Link
                         to="/dashboard/caregiver"
                         className="text-med mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline"
                     >
-                        <span className="text-med">←</span> Return Home
+                        <span className="text-med">←</span> Return to Dashboarad
                     </Link>
                 </div>
 
                 <div className="mb-6">
-                    <h2 className="bg-linear-to-r from-emerald-700 to-emerald-500 bg-clip-text text-4xl font-extrabold text-transparent">
+                    <h2 className="bg-gradient-to-r from-emerald-700 to-emerald-500 bg-clip-text text-4xl font-extrabold text-transparent">
                         Incoming Requests
                     </h2>
-                    <div className="mt-2 h-1.5 w-20" />
                 </div>
 
                 <div className="grid gap-10 lg:grid-cols-12">
@@ -241,17 +573,16 @@ export default function RequestsPage() {
                         )}
 
                         {requests.map((req) => {
-                            const conflict    = isRequestConflict(req);
-                            const isActing    = actionLoading === req.request_id;
-                            const skills: string[] =
-                                typeof req.skills_needed === "string"
-                                    ? JSON.parse(req.skills_needed)
-                                    : req.skills_needed ?? [];
+                            const conflict = isRequestConflict(req);
+                            const isActing = actionLoading === req.request_id;
+                            const skills   = parseSkills(req.skills_needed);
 
                             return (
                                 <div
                                     key={req.request_id}
-                                    className="group rounded-[2.5rem] bg-white p-6 shadow-xl shadow-blue-900/5 ring-1 ring-blue-100 transition-all hover:ring-emerald-300"
+                                    className="group cursor-pointer rounded-[2.5rem] bg-white p-6 shadow-xl shadow-blue-900/5 ring-1 ring-blue-100 transition-all hover:ring-emerald-300"
+                                    onClick={() => handleOpenDetail(req)}
+                                    title="Click to view client details"
                                 >
                                     <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
                                         {/* Profile Icon */}
@@ -262,7 +593,7 @@ export default function RequestsPage() {
                                         </div>
 
                                         <div className="flex-1">
-                                            {/* Name + Service Type + Conflict warning */}
+                                            {/* Name + badges */}
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <h4 className="text-xl font-semibold text-slate-700">{req.client_name}</h4>
                                                 <span className="rounded-lg bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
@@ -276,14 +607,13 @@ export default function RequestsPage() {
                                                         Day Taken
                                                     </span>
                                                 )}
-                                                {/* Payment status badge — navigates to payment page */}
-                                                <button
-                                                    onClick={() => navigate(`/payment/${req.request_id}`)}
-                                                    className="rounded-lg bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700 transition hover:bg-amber-200"
-                                                    title="View payment details"
-                                                >
+                                                <span className="rounded-lg bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-700">
                                                     {req.status}
-                                                </button>
+                                                </span>
+                                                {/* View details hint — appears on hover */}
+                                                <span className="ml-auto rounded-lg bg-slate-50 px-3 py-1 text-[10px] font-bold text-slate-400 ring-1 ring-slate-100 transition-all group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:ring-emerald-200">
+                                                    Click to view details
+                                                </span>
                                             </div>
 
                                             {/* Location + Gender + Age */}
@@ -309,11 +639,8 @@ export default function RequestsPage() {
 
                                             {/* Skills */}
                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                {skills.map((skill: string) => (
-                                                    <span
-                                                        key={skill}
-                                                        className="rounded-full bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-200"
-                                                    >
+                                                {skills.map((skill) => (
+                                                    <span key={skill} className="rounded-full bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600 ring-1 ring-blue-200">
                                                         {skill}
                                                     </span>
                                                 ))}
@@ -356,8 +683,11 @@ export default function RequestsPage() {
                                             </div>
                                         </div>
 
-                                        {/* Accept / Decline */}
-                                        <div className="flex w-full flex-row gap-2 sm:w-auto sm:flex-col">
+                                        {/* Accept / Decline — stopPropagation so card click doesn't fire */}
+                                        <div
+                                            className="flex w-full flex-row gap-2 sm:w-auto sm:flex-col"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <button
                                                 onClick={() => handleAccept(req)}
                                                 disabled={conflict || isActing}
@@ -386,47 +716,24 @@ export default function RequestsPage() {
                     {/* ── Calendar ── */}
                     <div className="lg:col-span-4">
                         <div className="sticky top-12 mx-auto max-w-150 rounded-[2.5rem] bg-white p-8 shadow-2xl ring-1 ring-emerald-200">
-
-                            {/* Month navigation */}
                             <div className="mb-6 flex items-center justify-between">
-                                <button
-                                    onClick={goToPrevMonth}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-100 hover:text-emerald-700 text-lg font-bold"
-                                >
-                                    ‹
-                                </button>
+                                <button onClick={goToPrevMonth} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-100 hover:text-emerald-700 text-lg font-bold">‹</button>
                                 <h3 className="text-center text-[11px] font-black uppercase tracking-[0.3em] text-slate-600">
                                     {MONTH_NAMES[calendarMonth - 1]} {calendarYear}
                                 </h3>
-                                <button
-                                    onClick={goToNextMonth}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-100 hover:text-emerald-700 text-lg font-bold"
-                                >
-                                    ›
-                                </button>
+                                <button onClick={goToNextMonth} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-emerald-100 hover:text-emerald-700 text-lg font-bold">›</button>
                             </div>
 
-                            {/* Day-of-week headers */}
                             <div className="grid grid-cols-7 gap-1 text-center">
                                 {["S","M","T","W","T","F","S"].map((d, i) => (
                                     <span key={i} className="mb-1 text-[9px] font-black text-slate-400">{d}</span>
                                 ))}
-
-                                {Array(firstDayOfWeek).fill(null).map((_, i) => (
-                                    <div key={`empty-${i}`} />
-                                ))}
-
+                                {Array(firstDayOfWeek).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
                                 {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                                     const booked = isDayBooked(day);
                                     return (
                                         <div key={day} className="relative flex items-center justify-center">
-                                            <div
-                                                className={`flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black transition-all duration-300 ${
-                                                    booked
-                                                        ? "scale-105 bg-emerald-500 text-white shadow-lg shadow-emerald-100"
-                                                        : "bg-blue-50 text-blue-700"
-                                                }`}
-                                            >
+                                            <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black transition-all duration-300 ${booked ? "scale-105 bg-emerald-500 text-white shadow-lg shadow-emerald-100" : "bg-blue-50 text-blue-700"}`}>
                                                 {day}
                                             </div>
                                         </div>
@@ -434,7 +741,6 @@ export default function RequestsPage() {
                                 })}
                             </div>
 
-                            {/* Legend */}
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-4 border-t border-slate-50 pt-6">
                                 <div className="flex items-center gap-2">
                                     <div className="h-2 w-2 rounded-full bg-blue-500" />

@@ -53,7 +53,7 @@ export const signupClient= async (req, res) => {
 
       //insert into client profiles
       await db.promise().query(
-        `INSERT INTO client_profiles (user_id, full_name, gender, date_of_birth, age, city, area, full_address, phone_number, email, national_id, diagnoses, conditions, allergies, blood_type, doctor_facility, medical_specialties_required, skills, emergency_contact1_name, emergency_contact1_phone, emergency_contact2_name, emergency_contact2_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO client_profiles (user_id, full_name, gender, date_of_birth, age, city, area, full_address, phone_number, email, national_id, diagnoses, conditions, allergies, blood_type, doctor_facility, medical_specialties_required, skills_needed, emergency_contact1_name, emergency_contact1_phone, emergency_contact2_name, emergency_contact2_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [userId, full_name, gender, date_of_birth, age, city, area, full_address, phone_number, email,
           national_id, diagnoses, conditions, JSON.stringify(allergies), blood_type, doctor_facility, medical_specialties_required,
           JSON.stringify(skills), emergency_contact1_name, emergency_contact1_phone, emergency_contact2_name, emergency_contact2_phone]

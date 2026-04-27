@@ -1,22 +1,27 @@
 import { useState } from "react";
 import { Link } from "react-router";
 
-export function Header() {
+const NAV_LINKS = [
+  { to: "/info", label: "About Us" },
+  { to: "/contact", label: "Contact Us" },
+] as const;
+
+export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  function toggleMobileMenu() {
+  const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-  }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-blue-100/50 bg-linear-to-r from-blue-50/80 via-white/80 to-emerald-50/80 px-6 py-4 shadow-sm backdrop-blur-xl transition-all duration-300 md:px-10">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
-        
-        {/* Logo */}
+
+        {/* Left Section: Logo */}
         <div className="flex flex-1 items-center justify-start">
-          <Link 
-            to="/" 
-            className="flex items-center gap-2.5 select-none transition-transform duration-200 active:scale-[0.98]" 
+          <Link
+            to="/"
+            className="flex items-center gap-2.5 select-none transition-transform duration-200 active:scale-[0.98]"
             aria-label="CareLink home"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/60 shadow-sm ring-1 ring-blue-100 backdrop-blur-sm" aria-hidden>
@@ -31,26 +36,21 @@ export function Header() {
           </Link>
         </div>
 
-        {/* Navigation Links*/}
+        {/* Center Section: Navigation Links */}
         <nav className="hidden md:flex items-center justify-center gap-10" aria-label="Main navigation">
-          <Link
-            to="/info"
-            className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
-          >
-            About Us
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
-          </Link>
-
-          <Link
-            to="/contact"
-            className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
-          >
-            Contact Us
-            <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
-          </Link>
+          {NAV_LINKS.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className="group relative text-base font-semibold text-gray-600 transition-colors duration-200 hover:text-blue-700 focus:outline-none"
+            >
+              {label}
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-blue-600 transition-all duration-300 group-hover:w-full" />
+            </Link>
+          ))}
         </nav>
 
-        {/* Sign In & Mobile Menu */}
+        {/* Right Section: Sign In & Mobile Menu */}
         <div className="flex flex-1 items-center justify-end gap-4">
           <Link
             to="/login"
@@ -78,24 +78,28 @@ export function Header() {
         </div>
       </div>
 
+      {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <nav className="mt-4 flex flex-col gap-2 border-t border-blue-100/50 pt-4 md:hidden">
+          {NAV_LINKS.map(({ to, label }) => (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+            >
+              {label}
+            </Link>
+          ))}
           <Link
-            to="/info"
+            to="/login"
             onClick={() => setIsMobileMenuOpen(false)}
-            className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
+            className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-base font-medium text-blue-900"
           >
-            About Us
-          </Link>
-          <Link
-            to="/contact"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="block rounded-lg px-4 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:outline-none"
-          >
-            Contact Us
+            Sign In
           </Link>
         </nav>
       )}
     </header>
   );
-}
+};

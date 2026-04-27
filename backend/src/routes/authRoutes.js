@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import {signupClient, signupCaregiver, signin, logout, getSecurityQuestions, forgotPasswordSecurity} from '../controllers/authController.js';
-import {authMiddleware} from '../middleware/authMiddleware.js';
+import {authMiddleware /*, authenticateToken*/} from '../middleware/authMiddleware.js';
 import { upload } from "../middleware/uploads.js";
 
 //signup routes
@@ -20,10 +20,10 @@ router.post('/signup-caregiver', upload.fields([
     ]), signupCaregiver)
 
 //signin routes
-router.post('/signin', authMiddleware(['Client', 'Caregiver', 'Admin']), signin);
+router.post('/signin', signin);
 
 //logout
-router.post('/logout', authMiddleware(['Client', 'Caregiver']), logout);
+router.post('/logout', /*authenticateToken,*/ logout);
 
 // Password recovery
 router.get('/security-questions/:username', getSecurityQuestions);

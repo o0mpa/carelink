@@ -12,11 +12,10 @@ export function meta() {
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
-  // FIX: Check if passwords match before sending
   if (formData.get("password") !== formData.get("confirmPassword")) {
     return { error: "Passwords do not match. Please try again." };
   }
-  
+
   // Remove confirm field to keep data clean for the backend
   formData.delete("confirmPassword");
 
@@ -24,7 +23,7 @@ export async function action({ request }: { request: Request }) {
     const response = await fetch("http://localhost:5000/api/auth/signup-caregiver", {
       method: "POST",
       // NO "Content-Type" header. The browser sets it to multipart/form-data automatically.
-      body: formData, 
+      body: formData,
     });
 
     if (response.ok) {
@@ -44,7 +43,10 @@ export default function RegisterCaregiver() {
   const isSubmitting = navigation.state === "submitting";
 
   const [selectedCity, setSelectedCity] = useState("");
-  
+
+  // Password state for live strength indicators
+  const [password, setPassword] = useState("");
+
   // DOB and Age stay in sync
   const [dob, setDob] = useState("");
   const [age, setAge] = useState("");
@@ -98,13 +100,50 @@ export default function RegisterCaregiver() {
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
                   <input type="email" name="email" required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
+
+                {/* Password with live strength indicators — must match backend validation:
+                    length >= 8, uppercase, lowercase, number, special character */}
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
-                  <input type="password" name="password" required minLength={8} pattern=".*[A-Z].*" title="Password must be at least 8 characters long and contain at least one uppercase letter." placeholder="Min 8 chars, 1 Capital" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?&quot;:{}|<>]).{8,}"
+                    title="Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character."
+                    placeholder="Min 8 chars, 1 Capital, 1 Number, 1 Special"
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <div className="mt-2 space-y-1">
+                    <p className={`text-xs ${password.length >= 8 ? "text-emerald-600" : "text-gray-400"}`}>
+                      ✓ Minimum 8 characters
+                    </p>
+                    <p className={`text-xs ${/[A-Z]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
+                      ✓ At least 1 uppercase letter
+                    </p>
+                    <p className={`text-xs ${/[a-z]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
+                      ✓ At least 1 lowercase letter
+                    </p>
+                    <p className={`text-xs ${/[0-9]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
+                      ✓ At least 1 number
+                    </p>
+                    <p className={`text-xs ${/[!@#$%^&*(),.?":{}|<>]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
+                      ✓ At least 1 special character (!@#$%^&*…)
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
-                  <input type="password" name="confirmPassword" required minLength={8} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    required
+                    minLength={8}
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
                 </div>
 
                 <div className="mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4 md:col-span-2">
@@ -150,26 +189,26 @@ export default function RegisterCaregiver() {
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    name="date_of_birth" 
-                    required 
-                    max="9999-12-31" 
+                  <input
+                    type="date"
+                    name="date_of_birth"
+                    required
+                    max="9999-12-31"
                     value={dob}
                     onChange={handleDobChange}
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+                {/* Age is readOnly — the backend recalculates it from date_of_birth via calculateAge() */}
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
-                  <input 
-                    type="number" 
-                    name="age" 
-                    required 
+                  <input
+                    type="number"
+                    name="age"
+                    required
+                    readOnly
                     value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "-" || e.key === "e" || e.key === "+" || e.key === ".") { e.preventDefault(); } }} 
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 [&::-webkit-inner-spin-button]:cursor-pointer [&::-webkit-inner-spin-button]:opacity-100" 
+                    className="w-full rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 cursor-not-allowed focus:outline-none"
                   />
                 </div>
                 <div>
@@ -307,7 +346,7 @@ export default function RegisterCaregiver() {
 
             {/* Salary Settings */}
             <section>
-              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Accepted salaries Per Day</h2>
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Accepted Salaries Per Day</h2>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Category A (3h)</label>
@@ -340,8 +379,8 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSubmitting}
               className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98] disabled:opacity-70"
             >

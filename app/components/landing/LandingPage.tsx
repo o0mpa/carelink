@@ -1,11 +1,12 @@
 import { Header } from "./Header";
 import { Hero } from "./Hero";
 
-export function LandingPage() {
+export const LandingPage = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-blue-100 via-white to-emerald-100">
-      
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+
+      {/* Layered gradient orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -left-48 -top-48 h-96 w-96 rounded-full bg-blue-400/50 blur-3xl animate-pulse" />
         <div className="absolute right-0 top-1/3 h-112 w-md rounded-full bg-teal-400/45 blur-3xl" />
         <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-400/45 blur-3xl" />
@@ -18,38 +19,14 @@ export function LandingPage() {
       <svg
         className="absolute inset-0 h-full w-full text-blue-200/70"
         xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
+        aria-hidden
       >
         <defs>
-          <pattern
-            id="waves"
-            x="0"
-            y="0"
-            width="60"
-            height="30"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M0 15 Q15 8 30 15 T60 15"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.6"
-            />
+          <pattern id="waves" x="0" y="0" width="60" height="30" patternUnits="userSpaceOnUse">
+            <path d="M0 15 Q15 8 30 15 T60 15" fill="none" stroke="currentColor" strokeWidth="0.6" />
           </pattern>
-          <pattern
-            id="wavesAlt"
-            x="0"
-            y="0"
-            width="60"
-            height="30"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M0 10 Q20 4 40 10 T60 10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="0.5"
-            />
+          <pattern id="wavesAlt" x="0" y="0" width="60" height="30" patternUnits="userSpaceOnUse">
+            <path d="M0 10 Q20 4 40 10 T60 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#waves)" />
@@ -63,30 +40,30 @@ export function LandingPage() {
           backgroundImage: `radial-gradient(circle at 1px 1px, rgb(30 64 175 / 0.5) 1px, transparent 0)`,
           backgroundSize: "32px 32px",
         }}
-        aria-hidden="true"
+        aria-hidden
       />
 
       {/* Diagonal color sweep */}
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
         style={{
-          background:
-            "linear-gradient(135deg, #60a5fa 0%, transparent 40%, #34d399 100%)",
+          background: "linear-gradient(135deg, #60a5fa 0%, transparent 40%, #34d399 100%)",
         }}
-        aria-hidden="true"
+        aria-hidden
       />
 
       {/* Soft radial vignette */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_40%,rgb(255_255_255/0.55)_100%)]"
-        aria-hidden="true"
+        aria-hidden
       />
 
+      {/* Main Content */}
       <div className="relative flex min-h-screen flex-col">
         <Header />
         <Hero />
       </div>
-      
+
     </div>
   );
-}
+};

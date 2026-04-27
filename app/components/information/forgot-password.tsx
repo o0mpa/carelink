@@ -52,8 +52,8 @@ export default function ResetPassword() {
           return;
         }
 
-        setQuestion1(data.question1);
-        setQuestion2(data.question2);
+      setQuestion1(data.security_question1);
+      setQuestion2(data.security_question2);
         setUsernameError("");
       } catch {
         setUsernameError("Cannot connect to server. Please try again.");
@@ -321,7 +321,13 @@ export default function ResetPassword() {
                     </p> 
             <button
               type="submit"
-              disabled={submitLoading || password !== confirmPassword || password.length < 8}
+              disabled={
+          submitLoading ||
+      password !== confirmPassword ||
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[0-9]/.test(password)
+          }
               className="w-full rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-3 font-bold text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
             >
               {submitLoading ? "Updating..." : "Update Password"}

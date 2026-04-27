@@ -182,10 +182,13 @@ export default function CaregiverProfile() {
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
-  return (
+    return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
-      <main className="container mx-auto px-4 py-10 sm:px-6 md:px-10">
+        <main className="container mx-auto px-4 py-4 sm:px-6 md:px-10">
         <div className="mx-auto max-w-5xl">
+                    <Link to="/dashboard/caregiver" className="inline-flex items-center gap-2 text-sm py-3 font-semibold text-emerald-500 transition-colors hover:text-emerald-900 hover:underline">
+            ← Back to Dashboard
+          </Link>
 
           {/* Profile Header */}
           <div className="mb-6 flex flex-col items-center justify-between rounded-3xl bg-white/90 p-8 shadow-lg backdrop-blur-md ring-2 ring-blue-100 sm:flex-row sm:p-10">
@@ -247,7 +250,7 @@ export default function CaregiverProfile() {
               </Link>
 
               <Link
-                to="/forgot-password"
+                to="/change-password"
                 className="flex items-center justify-center rounded-xl border-2 border-orange-500 bg-transparent px-5 py-2.5 text-sm font-bold text-orange-500 transition-all hover:bg-orange-50 active:scale-[0.98]"
               >
                 Change Password
