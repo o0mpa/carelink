@@ -6,7 +6,7 @@ import apiClient from '../../utils/apiclient';
 export function loader() {
   return null;
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // 🔧 DEV FLAGS — set both to false before going to production
 //
@@ -261,7 +261,7 @@ export default function PaymentForm() {
   // ── LOADING ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
           <div className="w-14 h-14 border-4 border-[#1976D2] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-slate-500 font-semibold">Loading payment information...</p>
@@ -273,7 +273,7 @@ export default function PaymentForm() {
   // ── FATAL ERROR ────────────────────────────────────────────────────────────
   if (error && !paymentStatus) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-blue-200 via-white to-emerald-200 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
           <div className="text-red-500 text-center mb-4 text-lg font-semibold">Error</div>
           <div className="text-slate-700 text-center mb-6">{error}</div>
@@ -297,7 +297,7 @@ export default function PaymentForm() {
 
   // ── MAIN PAGE ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-white to-emerald-200">
+    <div className="min-h-screen bg-linear-to-br from-blue-200 via-white to-emerald-200">
 
       {/* Dev banner */}
       {(USE_MOCK || DEV_BYPASS) && (
@@ -317,7 +317,7 @@ export default function PaymentForm() {
 
           {/* Icon + Title */}
           <div className="flex flex-col items-center mb-6">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-blue-600 shadow-md ring-1 ring-blue-200 mb-3">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-blue-600 shadow-md ring-1 ring-blue-200 mb-3">
               <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
                 <line x1="2" y1="10" x2="22" y2="10" />
@@ -434,7 +434,7 @@ export default function PaymentForm() {
                     className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all mt-4 ${
                       submitting
                         ? 'bg-slate-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
+                        : 'bg-linear-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
                     }`}
                   >
                     {submitting ? 'Processing...' : 'Pay Upfront'}
@@ -525,7 +525,7 @@ export default function PaymentForm() {
                     className={`w-full py-4 rounded-xl font-semibold text-white text-lg transition-all ${
                       submitting
                         ? 'bg-slate-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
+                        : 'bg-linear-to-r from-[#1976D2] to-[#26C6DA] hover:shadow-lg hover:scale-[1.02]'
                     }`}
                   >
                     {submitting ? 'Processing...' : `Pay ${paymentStatus.remaining} EGP`}
