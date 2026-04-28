@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, Form, redirect, useActionData, useNavigation, useLoaderData } from "react-router";
-import { apiUrl } from "../../utils/api";
+import { Link, useNavigate } from "react-router";
+import { getAuthHeaders, getToken } from "~/utils/auth";
 
 export function meta() {
   return [
@@ -9,112 +9,245 @@ export function meta() {
   ];
 }
 
-// 1. FETCH EXISTING DATA
-export async function loader() {
-  const token = typeof window !== "undefined" ? localStorage.getItem("carelink_token") : null;
-  if (!token) return redirect("/login");
+// ─── Backend notes ─────────────────────────────────────────────────────────────
+// GET  /api/caregiver/profile        → { profile: {...} }
+// PUT  /api/caregiver/edit-profile   → JSON body (NO multer on this route)
+// POST /api/caregiver/upload-picture → multipart/form-data with field "picture"
+//
+// Backend whitelist for edit-profile:
+//   full_name | city | area | full_address | phone_number | email |
+//   education_docs | certificates | criminal_record | references |
+//   skills | day_rate_a | day_rate_b | day_rate_c | day_rate_d | profile_picture
+//
+// NOT in whitelist (read-only): gender, date_of_birth, age, medical_specialties
+// skills must be JSON.stringified — backend does JSON.stringify() on insert
+//   and the matching algo uses JSON_OVERLAPS(cp.skills, ?)
+//
+// BACKEND BUG : authMiddleware never calls next() after
+// setting req.user/req.token → all protected routes hang forever.
+// Fix: add next() after `req.token = token;` in authMiddleware.js (IMPORTANT)
+// ──────────────────────────────────────────────────────────────────────────────
 
-  try {
-    const response = await fetch(`${apiUrl}/api/caregivers/profile`, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    if (response.ok) {
-      return await response.json();
-    }
-  } catch (error) {
-    console.error("Failed to load profile:", error);
-  }
-  return {};
-}
-
-// 2. SEND UPDATED DATA
-export async function action({ request }: { request: Request }) {
-  const token = localStorage.getItem("carelink_token");
-  if (!token) return redirect("/login");
-
-  const formData = await request.formData();
-
-  // CRITICAL FIX 1: If user unchecked all skills, force an empty array
-  // so the backend knows to clear them in the database!
-  if (!formData.has("skills")) {
-    formData.append("skills", "[]");
-  }
-
-  // CRITICAL FIX 2: Remove empty file inputs so Multer doesn't overwrite existing files
-  for (const [key, value] of Array.from(formData.entries())) {
-    if (value instanceof File && value.size === 0) {
-      formData.delete(key);
+const parseJsonArray = (val: unknown): string[] => {
+  if (Array.isArray(val)) return val.map(String);
+  if (typeof val === "string") {
+    try {
+      const p = JSON.parse(val);
+      return Array.isArray(p) ? p.map(String) : [];
+    } catch {
+      return val ? val.split(",").map(s => s.trim()).filter(Boolean) : [];
     }
   }
+  return [];
+};
 
-  try {
-    const response = await fetch(`${apiUrl}/api/caregivers/profile`, {
-      method: "PUT",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: formData, 
-    });
+const INPUT_CLS =
+  "w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500";
 
-    if (response.ok) {
-      return redirect("/dashboard/caregiver?updated=true");
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      return { error: errorData.message || "Update failed. Please try again." };
-    }
-  } catch (error) {
-    return { error: "Cannot connect to the server." };
-  }
-}
+const READONLY_CLS =
+  "w-full cursor-not-allowed rounded-xl border-2 border-gray-200 bg-gray-100 px-4 py-2.5 text-sm text-gray-500 focus:outline-none";
+
+const SKILLS = [
+  { value: "physical_care",         label: "Physical care"             },
+  { value: "medication_management", label: "Medication management"     },
+  { value: "meal_preparation",      label: "Meal preparation"          },
+  { value: "housekeeping",          label: "Housekeeping and cleaning"  },
+  { value: "emotional_support",     label: "Emotional support"         },
+  { value: "transportation",        label: "Transportation"            },
+  { value: "health_monitoring",     label: "Health monitoring"         },
+];
+
+const RATES = [
+  { label: "Category A (3h)",  name: "day_rate_a" as const },
+  { label: "Category B (6h)",  name: "day_rate_b" as const },
+  { label: "Category C (9h)",  name: "day_rate_c" as const },
+  { label: "Category D (12h)", name: "day_rate_d" as const },
+];
+
+type Rates = { day_rate_a: string; day_rate_b: string; day_rate_c: string; day_rate_d: string };
 
 export default function EditCaregiverProfile() {
-  const actionData = useActionData<{ error?: string }>();
-  const user = useLoaderData<any>() || {};
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const navigate = useNavigate();
 
-  const [selectedCity, setSelectedCity] = useState(user?.city || "");
-
-  // CRITICAL FIX 3: Safely parse MySQL Timestamp to YYYY-MM-DD
-  const safeDob = user?.date_of_birth ? user.date_of_birth.split('T')[0] : "";
-  const [dob, setDob] = useState(safeDob);
-  const [age, setAge] = useState(user?.age?.toString() || "");
-
-  const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDob = e.target.value;
-    setDob(newDob);
-    if (newDob) {
-      const birthDate = new Date(newDob);
-      const today = new Date();
-      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        calculatedAge--;
-      }
-      setAge(calculatedAge >= 0 ? calculatedAge.toString() : "0");
-    } else {
-      setAge("");
-    }
-  };
-
-  // Safe JSON parsing for skills array
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(() => {
-    if (!user?.skills) return [];
-    if (Array.isArray(user.skills)) return user.skills;
-    try { return JSON.parse(user.skills); } catch { return []; }
+  // ── Form state ──────────────────────────────────────────────────────────────
+  const [full_name,    setFullName]    = useState("");
+  const [city,         setCity]        = useState("");
+  const [area,         setArea]        = useState("");
+  const [full_address, setAddress]     = useState("");
+  const [phone_number, setPhone]       = useState("");
+  const [email,        setEmail]       = useState("");
+  const [skills,       setSkills]      = useState<string[]>([]);
+  const [rates,        setRates]       = useState<Rates>({
+    day_rate_a: "", day_rate_b: "", day_rate_c: "", day_rate_d: "",
   });
 
+  // Read-only (not in update whitelist)
+  const [gender,              setGender]       = useState("");
+  const [dob,                 setDob]          = useState("");
+  const [age,                 setAge]          = useState("");
+  const [medical_specialties, setSpecialties]  = useState("");
+  const [approval_status,     setApproval]     = useState("");
+
+  const [loading,    setLoading]    = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState("");
+  const [success,    setSuccess]    = useState("");
+
+  // ── Fetch existing profile on mount ─────────────────────────────────────────
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Correct URL: /api/caregiver/profile (singular, NOT /caregivers/)
+        const res = await fetch("http://localhost:5000/api/caregiver/profile", {
+          headers: getAuthHeaders(),
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) { navigate("/login"); return; }
+          setError("Failed to load profile.");
+          return;
+        }
+
+        const data = await res.json();
+        const p = data?.profile ?? data;
+
+        setFullName(p.full_name     || "");
+
+        // Normalize city to Title Case to match the matching algorithm
+        const rawCity = String(p.city || "");
+        const normalized = rawCity.charAt(0).toUpperCase() + rawCity.slice(1).toLowerCase();
+        setCity(normalized);
+
+        setArea(p.area              || "");
+        setAddress(p.full_address   || "");
+        setPhone(p.phone_number     || "");
+        setEmail(p.email            || "");
+        setSkills(parseJsonArray(p.skills));
+        setRates({
+          day_rate_a: p.day_rate_a != null ? String(p.day_rate_a) : "",
+          day_rate_b: p.day_rate_b != null ? String(p.day_rate_b) : "",
+          day_rate_c: p.day_rate_c != null ? String(p.day_rate_c) : "",
+          day_rate_d: p.day_rate_d != null ? String(p.day_rate_d) : "",
+        });
+
+        // Read-only fields
+        setGender(p.gender          || "");
+        // Strip time component from MySQL DATETIME e.g. "1990-05-15T00:00:00.000Z"
+        setDob((p.date_of_birth     || "").split("T")[0]);
+        setAge(p.age != null        ? String(p.age) : "");
+        setSpecialties(p.medical_specialties || "");
+        setApproval(p.approval_status        || "");
+      } catch {
+        setError("Cannot connect to server.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [navigate]);
+
+  // ── Skills checkbox handler ──────────────────────────────────────────────────
   const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
-    if (checked) {
-      setSelectedSkills((prev) => [...prev, value]);
-    } else {
-      setSelectedSkills((prev) => prev.filter((item) => item !== value));
+    setSkills(prev =>
+      checked ? [...prev, value] : prev.filter(s => s !== value)
+    );
+  };
+
+  // ── Profile picture upload ───────────────────────────────────────────────────
+  const handlePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("picture", file);
+    const token = getToken() ?? "";
+    try {
+      // Correct route: POST /api/caregiver/upload-picture
+      await fetch("http://localhost:5000/api/caregiver/upload-picture", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+    } catch {
+      // Non-critical — silently fail
     }
   };
 
+  // ── Submit ───────────────────────────────────────────────────────────────────
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (skills.length === 0) {
+      setError("Please select at least one skill.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    // Body must be plain JSON — edit-profile has NO multer middleware.
+    // Sending multipart/form-data would leave req.body completely empty.
+    //
+    // skills must be JSON.stringified to match the format stored by signup
+    // and expected by the matching algorithm's JSON_OVERLAPS(cp.skills, ?).
+    //
+    // City must be capitalized to match matching algo: WHERE cp.city = ?
+    const body = {
+      full_name,
+      city: city.charAt(0).toUpperCase() + city.slice(1).toLowerCase(),
+      area,
+      full_address,
+      phone_number,
+      email,
+      // JSON.stringify matches how signupCaregiver stores this column
+      skills: JSON.stringify(skills),
+      ...rates,
+    };
+
+    try {
+      // Correct URL: PUT /api/caregiver/edit-profile (NOT /caregivers/profile)
+      const res = await fetch("http://localhost:5000/api/caregiver/edit-profile", {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.message || "Update failed. Please try again.");
+        return;
+      }
+
+      setSuccess("Profile updated successfully!");
+      setTimeout(() => navigate("/profile/caregiver"), 1500);
+    } catch {
+      setError("Cannot connect to server.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Loading state ────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-emerald-100 via-white to-blue-100">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <p className="text-sm font-semibold text-gray-500">Loading profile…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-linear-to-br from-emerald-100 via-white to-blue-100 py-12">
       <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
+
           <h1 className="mb-2 text-center text-3xl font-extrabold text-emerald-900">
             Edit Professional Profile
           </h1>
@@ -122,211 +255,293 @@ export default function EditCaregiverProfile() {
             Update your rates, skills, and contact information.
           </p>
 
-          {actionData?.error && (
-            <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
-              {actionData.error}
+          {/* Approval status badge */}
+          {approval_status && (
+            <div className={`mb-6 rounded-xl p-3 text-center text-sm font-semibold ring-1 ${
+              approval_status === "Active"
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                : approval_status === "Pending"
+                ? "bg-amber-50 text-amber-700 ring-amber-200"
+                : "bg-red-50 text-red-700 ring-red-200"
+            }`}>
+              Account status: {approval_status}
             </div>
           )}
 
-          <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
-            
-            {/* Personal Information */}
+          {error && (
+            <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
+              ✓ {success}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+
+            {/* ── Profile Picture ── */}
             <section>
-              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Personal Information</h2>
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
+                Profile Picture
+              </h2>
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-2xl font-bold text-white shadow-md">
+                  {full_name.charAt(0) || "?"}
+                </div>
+                {/* Picture upload goes to its own dedicated route with multer */}
+                <label className="cursor-pointer rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                  Upload New Picture
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePictureUpload}
+                  />
+                </label>
+              </div>
+            </section>
+
+            {/* ── Personal Information ── */}
+            <section>
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
+                Personal Information
+              </h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
-                  <input type="text" name="full_name" defaultValue={user?.full_name} required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input
+                    type="text" required value={full_name}
+                    onChange={e => setFullName(e.target.value)}
+                    className={INPUT_CLS}
+                  />
                 </div>
+
+                {/* Gender — NOT in whitelist, shown read-only */}
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
-                  <select name="gender" defaultValue={user?.gender} required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">
+                    Gender <span className="text-xs font-normal italic">(not editable)</span>
+                  </label>
+                  <input type="text" value={gender} readOnly className={READONLY_CLS} />
                 </div>
+
+                {/* DOB — NOT in whitelist, shown read-only */}
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input type="date" name="date_of_birth" value={dob} onChange={handleDobChange} required max="9999-12-31" className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">
+                    Date of Birth <span className="text-xs font-normal italic">(not editable)</span>
+                  </label>
+                  <input type="text" value={dob} readOnly className={READONLY_CLS} />
                 </div>
+
+                {/* Age — NOT in whitelist, shown read-only */}
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Age</label>
-                  <input type="number" name="age" value={age} readOnly className="w-full rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">
+                    Age <span className="text-xs font-normal italic">(not editable)</span>
+                  </label>
+                  <input type="text" value={age} readOnly className={READONLY_CLS} />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
-                  <input type="tel" name="phone_number" defaultValue={user?.phone_number} required maxLength={11} onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input
+                    type="tel" required value={phone_number}
+                    onChange={e => setPhone(e.target.value)}
+                    maxLength={11}
+                    onInput={e => {
+                      e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11);
+                    }}
+                    className={INPUT_CLS}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
+                  <input
+                    type="email" required value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className={INPUT_CLS}
+                  />
                 </div>
               </div>
             </section>
 
-            {/* Location */}
+            {/* ── Location ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Location</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">City</label>
-                  <select name="city" required value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  {/*
+                    Values must be "Cairo"/"Giza"/"Alexandria" (capitalized).
+                    The matching algorithm does WHERE cp.city = ? where ? comes
+                    from the client's city. A lowercase mismatch means no matches.
+                  */}
+                  <select
+                    required value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className={INPUT_CLS}
+                  >
                     <option value="">Select City</option>
-                    <option value="cairo">Cairo</option>
-                    <option value="giza">Giza</option>
-                    <option value="alexandria">Alexandria</option>
+                    <option value="Cairo">Cairo</option>
+                    <option value="Giza">Giza</option>
+                    <option value="Alexandria">Alexandria</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
-                  <select name="area" required defaultValue={user?.area} disabled={!selectedCity} className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100">
+                  <select
+                    required value={area}
+                    onChange={e => setArea(e.target.value)}
+                    disabled={!city}
+                    className={`${INPUT_CLS} disabled:bg-gray-100`}
+                  >
                     <option value="">Select Area</option>
-                    {selectedCity === "cairo" && (
-                      <>
-                        <option value="Nasr City">Nasr City</option>
-                        <option value="Heliopolis">Heliopolis (Masr El Gedida)</option>
-                        <option value="New Cairo">New Cairo</option>
-                        <option value="Maadi">Maadi</option>
-                        <option value="Mokattam">Mokattam</option>
-                        <option value="Shubra">Shubra</option>
-                        <option value="Zamalek">Zamalek</option>
-                        <option value="Garden City">Garden City</option>
-                        <option value="Downtown Cairo">Downtown Cairo</option>
-                        <option value="El Rehab">El Rehab</option>
-                        <option value="Madinaty">Madinaty</option>
-                        <option value="Fifth Settlement">Fifth Settlement</option>
-                      </>
-                    )}
-                    {selectedCity === "giza" && (
-                      <>
-                        <option value="Dokki">Dokki</option>
-                        <option value="Mohandessin">Mohandessin</option>
-                        <option value="Haram">Haram</option>
-                        <option value="Faisal">Faisal</option>
-                        <option value="Sheikh Zayed">Sheikh Zayed</option>
-                        <option value="6th of October">6th of October</option>
-                        <option value="Agouza">Agouza</option>
-                        <option value="Imbaba">Imbaba</option>
-                      </>
-                    )}
-                    {selectedCity === "alexandria" && (
-                      <>
-                        <option value="Smouha">Smouha</option>
-                        <option value="Sidi Gaber">Sidi Gaber</option>
-                        <option value="Stanley">Stanley</option>
-                        <option value="Miami">Miami</option>
-                        <option value="Montaza">Montaza</option>
-                        <option value="Raml Station">Raml Station</option>
-                        <option value="Borg El Arab">Borg El Arab</option>
-                      </>
-                    )}
+                    {city === "Cairo" && (<>
+                      <option>Nasr City</option>
+                      <option>Heliopolis (Masr El Gedida)</option>
+                      <option>New Cairo</option>
+                      <option>Maadi</option>
+                      <option>Mokattam</option>
+                      <option>Shubra</option>
+                      <option>Zamalek</option>
+                      <option>Garden City</option>
+                      <option>Downtown Cairo</option>
+                      <option>El Rehab</option>
+                      <option>Madinaty</option>
+                      <option>Fifth Settlement</option>
+                    </>)}
+                    {city === "Giza" && (<>
+                      <option>Dokki</option>
+                      <option>Mohandessin</option>
+                      <option>Haram</option>
+                      <option>Faisal</option>
+                      <option>Sheikh Zayed</option>
+                      <option>6th of October</option>
+                      <option>Agouza</option>
+                      <option>Imbaba</option>
+                    </>)}
+                    {city === "Alexandria" && (<>
+                      <option>Smouha</option>
+                      <option>Sidi Gaber</option>
+                      <option>Stanley</option>
+                      <option>Miami</option>
+                      <option>Montaza</option>
+                      <option>Raml Station</option>
+                      <option>Borg El Arab</option>
+                    </>)}
                   </select>
                 </div>
+
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Address</label>
-                  <input type="text" name="full_address" defaultValue={user?.full_address} required className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <input
+                    type="text" required value={full_address}
+                    onChange={e => setAddress(e.target.value)}
+                    className={INPUT_CLS}
+                  />
                 </div>
               </div>
             </section>
 
-            {/* Skills & Experience */}
+            {/* ── Skills & Experience ── */}
             <section>
-              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Skills & Experience</h2>
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
+                Skills & Experience
+              </h2>
               <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
+                {/*
+                  Skills sent as JSON.stringified array.
+                  Field name in whitelist: "skills" (singular, not "skills_needed").
+                  Values must match the matching algorithm's JSON_OVERLAPS(cp.skills, ?).
+                */}
+                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">
+                  Select all that apply (at least one required)
+                </p>
                 <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {[
-                    "physical_care", "medication_management", "meal_preparation", 
-                    "housekeeping", "emotional_support", "transportation", "health_monitoring"
-                  ].map((skill) => (
-                    <label key={skill} className="flex items-center gap-2 text-sm text-gray-700">
-                      <input 
-                        type="checkbox" 
-                        name="skills" 
-                        value={skill} 
-                        checked={selectedSkills.includes(skill)} 
+                  {SKILLS.map(({ value, label }) => (
+                    <label key={value} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        value={value}
+                        checked={skills.includes(value)}
                         onChange={handleSkillChange}
-                        className="h-4 w-4 rounded border-2 border-gray-400 accent-emerald-600" 
-                      /> 
-                      {skill.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                        className="h-4 w-4 rounded border-2 border-gray-400 accent-emerald-600 focus:ring-emerald-500"
+                      />
+                      {label}
                     </label>
                   ))}
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Medical Specialties:</label>
-                  <input type="text" name="medical_specialties" defaultValue={user?.medical_specialties} className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none" />
+
+                {/* medical_specialties is NOT in the update whitelist — shown read-only */}
+                <div className="border-t-2 border-gray-100 pt-4">
+                  <label className="mb-1 block text-sm font-semibold text-gray-500">
+                    Medical Specialties{" "}
+                    <span className="text-xs font-normal italic">(not editable — set during registration)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={medical_specialties}
+                    readOnly
+                    className={READONLY_CLS}
+                  />
                 </div>
               </div>
             </section>
 
-            {/* Document Uploads */}
+            {/* ── Accepted Salaries ── */}
             <section>
-              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Update Documents (Optional)</h2>
-              <p className="text-xs text-emerald-700 mb-4">Leave blank to keep your current verification files.</p>
-              <div className="grid grid-cols-1 gap-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4 md:grid-cols-3">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">High School / Higher Ed</label>
-                  <input type="file" name="education_docs" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">Caregiving / First Aid Cert</label>
-                  <input type="file" name="certificates" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">National ID</label>
-                  <input type="file" name="national_id" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">Criminal Record</label>
-                  <input type="file" name="criminal_record" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-700">Past References</label>
-                  <input type="file" name="references" accept=".jpg, .jpeg, .png, .pdf" className="max-w-full text-xs" />
-                </div>
-              </div>
-            </section>
-
-            {/* Salary Settings */}
-            <section>
-              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Accepted salaries Per Day</h2>
+              <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
+                Accepted Salaries Per Day
+              </h2>
+              {/*
+                Field names: day_rate_a / day_rate_b / day_rate_c / day_rate_d
+                These map to the matching algorithm's CASE statement:
+                  WHEN 'A' THEN cp.day_rate_a BETWEEN min_compensation AND max_compensation
+                A wrong field name here would silently break caregiver matching.
+              */}
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Cat A (3h)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="day_rate_a" defaultValue={user?.day_rate_a} min="0" max="5000" required className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none" />
+                {RATES.map(({ label, name }) => (
+                  <div key={name}>
+                    <label className="mb-1 block text-sm font-semibold text-gray-700">{label}</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max="5000"
+                        value={rates[name]}
+                        onChange={e => setRates(prev => ({ ...prev, [name]: e.target.value }))}
+                        placeholder="0"
+                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Cat B (6h)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="day_rate_b" defaultValue={user?.day_rate_b} min="0" max="5000" required className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Cat C (9h)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="day_rate_c" defaultValue={user?.day_rate_c} min="0" max="5000" required className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">Cat D (12h)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
-                    <input type="number" name="day_rate_d" defaultValue={user?.day_rate_d} min="0" max="5000" required className="w-full rounded-xl border-2 border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none" />
-                  </div>
-                </div>
+                ))}
               </div>
             </section>
 
+            {/* ── Actions ── */}
             <div className="flex gap-4">
-              <Link to="/dashboard/caregiver" className="w-1/3 rounded-xl border-2 border-gray-300 bg-white px-4 py-4 text-center text-lg font-bold text-gray-700 hover:bg-gray-50">
+              <Link
+                to="/profile/caregiver"
+                className="w-1/3 rounded-xl border-2 border-gray-300 bg-white px-4 py-4 text-center text-lg font-bold text-gray-700 transition-colors hover:bg-gray-50"
+              >
                 Cancel
               </Link>
-              <button type="submit" disabled={isSubmitting} className="w-2/3 rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all hover:bg-emerald-700 disabled:opacity-70">
-                {isSubmitting ? "Saving Updates..." : "Save Profile"}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-2/3 rounded-xl bg-emerald-600 px-4 py-4 text-lg font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-70"
+              >
+                {submitting ? "Saving…" : "Save Changes"}
               </button>
             </div>
-          </Form>
+          </form>
         </div>
       </main>
     </div>
