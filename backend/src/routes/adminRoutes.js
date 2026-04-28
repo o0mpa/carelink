@@ -12,7 +12,7 @@ import { getAllCaregivers,
 
 const router = express.Router();
 
-//all admin routes are protected - need authenticated
+//all admin routes are protected - need authentication
 //fetching caregiver profiles + reviewing applications
 router.get('/caregivers', authMiddleware(['Admin']), getAllCaregivers);
 router.get('/caregivers/:caregiverId', authMiddleware(['Admin']), getCaregiverDetails);
