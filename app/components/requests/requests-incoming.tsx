@@ -556,7 +556,7 @@ export default function RequestsPage() {
                 </div>
 
                 <div className="mb-6">
-                    <h2 className="bg-gradient-to-r from-emerald-700 to-emerald-500 bg-clip-text text-4xl font-extrabold text-transparent">
+                    <h2 className="bg-linear-to-r from-emerald-700 to-emerald-500 bg-clip-text text-4xl font-extrabold text-transparent">
                         Incoming Requests
                     </h2>
                 </div>
