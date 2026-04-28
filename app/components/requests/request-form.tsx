@@ -50,6 +50,7 @@ export default function RequestForm() {
 
     const token = getToken();
     if (!token) {
+      setSubmitting(false);
       navigate("/login");
       return;
     }
