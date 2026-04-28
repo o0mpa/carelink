@@ -293,7 +293,7 @@ export default function EditClientProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
                   <input
-                    type="text" required value={full_name}
+                    type="text" value={full_name}
                     onChange={e => setFullName(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -327,7 +327,7 @@ export default function EditClientProfile() {
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
                   <input
-                    type="tel" required value={phone_number}
+                    type="tel" value={phone_number}
                     onChange={e => setPhone(e.target.value)}
                     maxLength={11}
                     onInput={e => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }}
@@ -338,7 +338,7 @@ export default function EditClientProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
                   <input
-                    type="email" required value={email}
+                    type="email" value={email}
                     onChange={e => setEmail(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -357,7 +357,7 @@ export default function EditClientProfile() {
                     Values must be "Cairo"/"Giza"/"Alexandria" (capitalized)
                     to match client_profiles city values used in caregiver matching.
                   */}
-                  <select required value={city} onChange={e => setCity(e.target.value)} className={INPUT_CLS}>
+                  <select value={city} onChange={e => setCity(e.target.value)} className={INPUT_CLS}>
                     <option value="">Select City</option>
                     <option value="Cairo">Cairo</option>
                     <option value="Giza">Giza</option>
@@ -367,7 +367,7 @@ export default function EditClientProfile() {
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
-                  <select required value={area} onChange={e => setArea(e.target.value)}
+                  <select value={area} onChange={e => setArea(e.target.value)}
                     disabled={!city}
                     className={`${INPUT_CLS} disabled:bg-gray-100`}>
                     <option value="">Select Area</option>
@@ -394,7 +394,7 @@ export default function EditClientProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Address</label>
                   <input
-                    type="text" required value={full_address}
+                    type="text" value={full_address}
                     onChange={e => setAddress(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -532,13 +532,13 @@ export default function EditClientProfile() {
                     <h3 className="mb-2 font-semibold text-blue-900">{label}</h3>
                     <div className="mb-2">
                       <label className="mb-1 block text-xs font-semibold text-gray-700">Full Name</label>
-                      <input type="text" required value={name}
+                      <input type="text" value={name}
                         onChange={e => setName(e.target.value)}
                         className="w-full rounded-lg border-2 border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none" />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-semibold text-gray-700">Phone Number</label>
-                      <input type="tel" required value={phone}
+                      <input type="tel" value={phone}
                         onChange={e => setSP(e.target.value)}
                         maxLength={11}
                         onInput={e => { e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, "").slice(0, 11); }}

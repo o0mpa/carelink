@@ -317,7 +317,7 @@ export default function EditCaregiverProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Name</label>
                   <input
-                    type="text" required value={full_name}
+                    type="text" value={full_name}
                     onChange={e => setFullName(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -350,7 +350,7 @@ export default function EditCaregiverProfile() {
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
                   <input
-                    type="tel" required value={phone_number}
+                    type="tel" value={phone_number}
                     onChange={e => setPhone(e.target.value)}
                     maxLength={11}
                     onInput={e => {
@@ -363,7 +363,7 @@ export default function EditCaregiverProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Email Address</label>
                   <input
-                    type="email" required value={email}
+                    type="email" value={email}
                     onChange={e => setEmail(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -384,7 +384,7 @@ export default function EditCaregiverProfile() {
                     from the client's city. A lowercase mismatch means no matches.
                   */}
                   <select
-                    required value={city}
+                    value={city}
                     onChange={e => setCity(e.target.value)}
                     className={INPUT_CLS}
                   >
@@ -398,7 +398,7 @@ export default function EditCaregiverProfile() {
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
                   <select
-                    required value={area}
+                    value={area}
                     onChange={e => setArea(e.target.value)}
                     disabled={!city}
                     className={`${INPUT_CLS} disabled:bg-gray-100`}
@@ -443,7 +443,7 @@ export default function EditCaregiverProfile() {
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Full Address</label>
                   <input
-                    type="text" required value={full_address}
+                    type="text" value={full_address}
                     onChange={e => setAddress(e.target.value)}
                     className={INPUT_CLS}
                   />
@@ -515,7 +515,6 @@ export default function EditCaregiverProfile() {
                       <span className="absolute left-3 top-2.5 font-semibold text-gray-500">E£</span>
                       <input
                         type="number"
-                        required
                         min="0"
                         max="5000"
                         value={rates[name]}
