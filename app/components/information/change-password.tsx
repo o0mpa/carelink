@@ -61,9 +61,9 @@ export default function ChangePassword() {
     setSubmitLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        "http://localhost:5000/api/client/change-password",
         {
-          method: "POST",
+          method: "PUT",
           headers: { 
             "Content-Type": "application/json",
             // Include auth token if available
@@ -79,6 +79,7 @@ export default function ChangePassword() {
       const result = await response.json();
 
       if (!response.ok) {
+        console.log("Server Error Result:", result);
         setError(result.message || "Failed to update password. Please try again.");
         return;
       }
@@ -145,16 +146,6 @@ export default function ChangePassword() {
               className="w-full rounded-xl border-2 border-gray-200 p-2 text-sm text-slate-700 outline-none transition-colors focus:border-emerald-100 focus:ring-2 focus:ring-emerald-200 disabled:bg-gray-50 disabled:text-gray-400"
             />
           </div>
-
-          {/* Divider
-          <div className="flex items-center gap-2 py-1">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-              New Password
-            </span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div> */}
-
           {/* New Password */}
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase text-slate-500">

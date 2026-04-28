@@ -19,10 +19,12 @@ export default [
   route("profile/client/edit", "components/profile/edit-client.tsx"), 
   route("profile/caregiver", "components/profile/caregiver-profile.tsx"),
   route("profile/caregiver/edit", "components/profile/edit-caregiver.tsx"), 
+  route("dashboard/contact", "components/profile/contact-dashboard.tsx"),
 
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
   route("dashboard/caregiver", "components/requests/caregiver-dashboard.tsx"),
+
   
   // Request Flow
   route("request-care", "components/requests/request-form.tsx"),
