@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { getAuthHeaders, getToken } from "~/utils/auth";
+import { apiUrl } from "~/utils/api";
 
 export function meta() {
   return [
@@ -60,8 +61,8 @@ const SKILLS = [
 const RATES = [
   { label: "Category A (3h)",  name: "day_rate_a" as const },
   { label: "Category B (6h)",  name: "day_rate_b" as const },
-  { label: "Category C (9h)",  name: "day_rate_c" as const },
-  { label: "Category D (12h)", name: "day_rate_d" as const },
+  { label: "Category C (12h)", name: "day_rate_c" as const },
+  { label: "Category D (24h)", name: "day_rate_d" as const },
 ];
 
 type Rates = { day_rate_a: string; day_rate_b: string; day_rate_c: string; day_rate_d: string };
@@ -98,7 +99,7 @@ export default function EditCaregiverProfile() {
     const fetchProfile = async () => {
       try {
         // Correct URL: /api/caregiver/profile (singular, NOT /caregivers/)
-        const res = await fetch("http://localhost:5000/api/caregiver/profile", {
+        const res = await fetch(apiUrl("/api/caregiver/profile"), {
           headers: getAuthHeaders(),
         });
 
@@ -164,13 +165,16 @@ export default function EditCaregiverProfile() {
     const token = getToken() ?? "";
     try {
       // Correct route: POST /api/caregiver/upload-picture
-      await fetch("http://localhost:5000/api/caregiver/upload-picture", {
+      const res = await fetch(apiUrl("/api/caregiver/upload-picture"), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
+      if (!res.ok) {
+        setError("Profile picture upload failed. Please try again.");
+      }
     } catch {
-      // Non-critical — silently fail
+      setError("Cannot upload profile picture right now.");
     }
   };
 
@@ -208,7 +212,7 @@ export default function EditCaregiverProfile() {
 
     try {
       // Correct URL: PUT /api/caregiver/edit-profile (NOT /caregivers/profile)
-      const res = await fetch("http://localhost:5000/api/caregiver/edit-profile", {
+      const res = await fetch(apiUrl("/api/caregiver/edit-profile"), {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(body),

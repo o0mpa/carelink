@@ -1,4 +1,7 @@
-import { useLoaderData, Form, Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import { apiUrl } from "~/utils/api";
+import { getAuthHeaders } from "~/utils/auth";
 
 export function meta() {
   return [
@@ -10,42 +13,99 @@ export function meta() {
   ];
 }
 
-export async function loader() {
-  return {
-    myRequests: [
-      {
-        id: 1,
-        caregiverName: "Caregiver A",
-        serviceType: "Elderly Care",
-        date: "March 15, 2026",
-        duration: "3 Hours",
-        status: "Accepted",
-        price: "E£ 450",
-      },
-      {
-        id: 2,
-        caregiverName: "Caregiver B",
-        serviceType: "Post-surgery Recovery",
-        date: "March 22, 2026",
-        duration: "6 Hours",
-        status: "Pending",
-        price: "E£ 400",
-      },
-      {
-        id: 3,
-        caregiverName: "Caregiver C",
-        serviceType: "Nursing Care",
-        date: "March 25, 2026",
-        duration: "12 Hours",
-        status: "Declined",
-        price: "E£ 600",
-      },
-    ],
-  };
-}
+type ClientRequest = {
+  id: string | number;
+  requestId?: number;
+  caregiverId?: number;
+  caregiverName: string;
+  serviceType: string;
+  date: string;
+  duration: string;
+  status: "Pending" | "Accepted" | "Declined";
+  price: string;
+};
+
+type BackendCurrentRequest = {
+  request_id: number;
+  care_category: string;
+  day_category: string;
+  min_compensation: number;
+  max_compensation: number;
+  start_date: string;
+  end_date: string;
+  status: "Pending" | "Accepted" | "Declined" | "Completed" | "Paid";
+  caregiver_id: number | null;
+  caregiver_name: string | null;
+};
+
+const DAY_CATEGORY_LABEL: Record<string, string> = {
+  A: "3 Hours",
+  B: "6 Hours",
+  C: "12 Hours",
+  D: "24 Hours",
+};
+
+const formatDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
 
 export default function ClientRequests() {
-  const { myRequests } = useLoaderData();
+  const [myRequests, setMyRequests] = useState<ClientRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchCurrentRequest = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(apiUrl("/api/requests/clients/current-request"), {
+          headers: getAuthHeaders(),
+        });
+
+        if (response.status === 404) {
+          setMyRequests([]);
+          return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data?.message || "Failed to load your requests.");
+        }
+
+        const current: BackendCurrentRequest | null = data?.requests ?? null;
+        if (!current) {
+          setMyRequests([]);
+          return;
+        }
+
+        const mapped: ClientRequest = {
+          id: current.request_id,
+          requestId: current.request_id,
+          caregiverId: current.caregiver_id ?? undefined,
+          caregiverName:
+            current.caregiver_name ||
+            "Caregiver (awaiting acceptance)",
+          serviceType: current.care_category || "Care Service",
+          date: `${formatDate(current.start_date)}${current.end_date && current.end_date !== current.start_date ? ` - ${formatDate(current.end_date)}` : ""}`,
+          duration: DAY_CATEGORY_LABEL[current.day_category] ?? current.day_category ?? "Not specified",
+          status: current.status === "Paid" || current.status === "Completed" ? "Accepted" : current.status,
+          price: `E£ ${current.min_compensation} - E£ ${current.max_compensation}`,
+        };
+
+        setMyRequests([mapped]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load your requests.");
+        setMyRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentRequest();
+  }, []);
 
   return ( 
     <div className="relative min-h-screen origin-top bg-white font-sans">
@@ -77,8 +137,26 @@ export default function ClientRequests() {
           <div className="mt-4 h-1.5 w-20 bg-blue-600" />
         </div>
 
+        {error && (
+          <div className="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 ring-1 ring-red-200">
+            {error}
+          </div>
+        )}
+
+        {loading && (
+          <div className="mb-5 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow ring-1 ring-slate-100">
+            Loading your latest request...
+          </div>
+        )}
+
         <div className="grid gap-6">
-          {myRequests.map((req: any) => (
+          {myRequests.length === 0 && (
+            <div className="rounded-3xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-lg ring-1 ring-slate-100">
+              No selected caregiver requests yet. Start by submitting a request and confirming a caregiver match.
+            </div>
+          )}
+
+          {myRequests.map((req: ClientRequest) => (
             <div
               key={req.id}
               className={`group flex flex-col items-start gap-6 rounded-4xl bg-white p-6 shadow-lg ring-1 transition-all hover:-translate-y-1 sm:flex-row sm:items-center sm:p-8 ${
@@ -142,34 +220,28 @@ export default function ClientRequests() {
               {/* Action Buttons */}
               <div className="flex w-full shrink-0 flex-col sm:w-auto">
                 {req.status === "Accepted" && (
-                  <Form method="post" className="w-full">
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <input type="hidden" name="intent" value="pay" />
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-emerald-700"
-                    >
-                      Pay & Confirm
-                    </button>
-                  </Form>
+                  <Link
+                    to={req.requestId ? `/payments?requestId=${req.requestId}` : "/dashboard/client"}
+                    className="w-full rounded-xl bg-emerald-600 px-6 py-3 text-center text-sm font-bold text-white shadow-md transition-all hover:bg-emerald-700"
+                  >
+                    Pay & Confirm
+                  </Link>
                 )}
                 
                 {req.status === "Pending" && (
-                  <Form method="post" className="w-full">
-                    <input type="hidden" name="requestId" value={req.id} />
-                    <input type="hidden" name="intent" value="cancel" />
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl border-2 border-slate-200 px-6 py-3 text-sm font-bold text-slate-500 transition-all hover:bg-slate-50"
-                    >
-                      Cancel Offer
-                    </button>
-                  </Form>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full cursor-not-allowed rounded-xl border-2 border-slate-200 px-6 py-3 text-sm font-bold text-slate-400"
+                    title="Waiting for caregiver response"
+                  >
+                    Waiting For Caregiver
+                  </button>
                 )}
 
                 {req.status === "Declined" && (
                   <Link
-                    to="/match-results"
+                    to={`/match-results${req.requestId ? `?requestId=${req.requestId}` : ""}`}
                     className="w-full rounded-xl bg-blue-50 px-6 py-3 text-center text-sm font-bold text-blue-600 transition-all hover:bg-blue-100"
                   >
                     Find Another

@@ -102,8 +102,15 @@ export default function RequestForm() {
       });
 
       if (response.ok) {
-        // Success! Redirect them to their dashboard to see the pending request
-        navigate("/dashboard/client?requestCreated=true");
+        const data = await response.json().catch(() => ({}));
+        const requestId = data?.requestId;
+
+        // Move client into matching flow after request is created.
+        if (requestId) {
+          navigate(`/match-results?requestId=${requestId}`);
+        } else {
+          navigate("/match-results");
+        }
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.message || "Failed to submit request. Please try again.");

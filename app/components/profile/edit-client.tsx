@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
 import { getAuthHeaders, getToken } from "~/utils/auth";
+import { apiUrl } from "~/utils/api";
 
 export function meta() {
   return [
@@ -84,7 +85,7 @@ export default function EditClientProfile() {
     const fetchProfile = async () => {
       try {
         // Correct URL: /api/client/profile (singular, not /clients/)
-        const res = await fetch("http://localhost:5000/api/client/profile", {
+        const res = await fetch(apiUrl("/api/client/profile"), {
           headers: getAuthHeaders(),
         });
         if (!res.ok) {
@@ -152,13 +153,16 @@ export default function EditClientProfile() {
     const token = getToken() ?? "";
     try {
       // Correct route: POST /api/client/upload-picture
-      await fetch("http://localhost:5000/api/client/upload-picture", {
+      const res = await fetch(apiUrl("/api/client/upload-picture"), {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
+      if (!res.ok) {
+        setError("Profile picture upload failed. Please try again.");
+      }
     } catch {
-      // Silently fail — picture upload is non-critical
+      setError("Cannot upload profile picture right now.");
     }
   };
 
@@ -199,7 +203,7 @@ export default function EditClientProfile() {
 
     try {
       // Correct URL: PUT /api/client/edit-profile (not /clients/profile)
-      const res = await fetch("http://localhost:5000/api/client/edit-profile", {
+      const res = await fetch(apiUrl("/api/client/edit-profile"), {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(body),

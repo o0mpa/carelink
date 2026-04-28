@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
+import { apiUrl } from "~/utils/api";
 
 export function meta() {
   return [
@@ -55,7 +56,7 @@ export async function action({ request }: { request: Request }) {
   // with the correct boundary for file uploads automatically.
   try {
     const response = await fetch(
-      "http://localhost:5000/api/auth/signup-caregiver",
+      apiUrl("/api/auth/signup-caregiver"),
       { method: "POST", body: formData }
     );
 
@@ -512,8 +513,8 @@ export default function RegisterCaregiver() {
                 {[
                   { label: "Category A (3h)",  name: "day_rate_a" },
                   { label: "Category B (6h)",  name: "day_rate_b" },
-                  { label: "Category C (9h)",  name: "day_rate_c" },
-                  { label: "Category D (12h)", name: "day_rate_d" },
+                  { label: "Category C (12h)", name: "day_rate_c" },
+                  { label: "Category D (24h)", name: "day_rate_d" },
                 ].map(({ label, name }) => (
                   <div key={name}>
                     <label className="mb-1 block text-sm font-semibold text-gray-700">{label}</label>
