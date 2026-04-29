@@ -129,7 +129,7 @@ export default function ClientRequests() {
 
         <div className="mb-10">
           <h2 className="bg-linear-to-r from-blue-700 to-emerald-500 bg-clip-text text-4xl font-extrabold text-transparent">
-            Your Job Requests
+            Your Past Care Requests
           </h2>
           <p className="mt-3 text-lg text-gray-600">
             Track the status of the offers you have sent to caregivers.
