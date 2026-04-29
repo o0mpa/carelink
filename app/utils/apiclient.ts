@@ -1,41 +1,57 @@
-import axios from 'axios';
+const baseURL = 'http://localhost:5000/api';
 
-const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: {
+const handleUnauthorized = () => {
+  localStorage.removeItem('carelink_token');
+  localStorage.removeItem('carelink_role');
+  localStorage.removeItem('carelink_profile');
+  window.location.href = '/login';
+};
+
+const request = async <T = any>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> => {
+  const token = localStorage.getItem('carelink_token');
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
+    ...(options.headers as Record<string, string>),
+  };
 
-// Add token to requests if it exists
-apiClient.interceptors.request.use(
-  (config) => {
-    
-    const token = localStorage.getItem('carelink_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
-);
 
-// Handle response errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear auth data and redirect to login
-      localStorage.removeItem('carelink_token');
-      localStorage.removeItem('carelink_role');
-      localStorage.removeItem('carelink_profile');
-      window.location.href = '/login';
+  const response = await fetch(`${baseURL}${path}`, {
+    credentials: 'include',
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      handleUnauthorized();
     }
-    return Promise.reject(error);
+
+    const errorBody = await response.text();
+    throw new Error(errorBody || `Request failed with status ${response.status}`);
   }
-);
+
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  return response.json() as Promise<T>;
+};
+
+const apiClient = {
+  get: <T = any>(path: string) => request<T>(path, { method: 'GET' }),
+  post: <T = any>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+  put: <T = any>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
+  patch: <T = any>(path: string, body?: unknown) =>
+    request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+  delete: <T = any>(path: string) => request<T>(path, { method: 'DELETE' }),
+};
 
 export default apiClient;
