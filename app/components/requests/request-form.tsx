@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { getAuthHeaders, getToken } from "~/utils/auth";
 import { apiUrl } from "~/utils/api";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { CalendarDays } from "lucide-react";
 
 export function meta() {
   return [
@@ -20,19 +23,72 @@ const SKILLS_LIST = [
   { value: "health_monitoring", label: "Health monitoring" },
 ];
 
+const formatDateDDMMYYYY = (date: Date): string => {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+const parseDDMMYYYY = (value: string): Date | null => {
+  const parts = value.split("/");
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts.map(Number);
+  if (!dd || !mm || !yyyy || yyyy < 1900) return null;
+  const date = new Date(yyyy, mm - 1, dd);
+  if (isNaN(date.getTime())) return null;
+  return date;
+};
+
+// DateInput supports both typing and clicking the calendar icon
+const DateInput = forwardRef<
+  HTMLInputElement,
+  {
+    value?: string;
+    onClick?: () => void;
+    onChange?: (val: string) => void;
+    placeholder?: string;
+  }
+>(({ value, onClick, onChange, placeholder }, ref) => {
+  const [rawInput, setRawInput] = useState(value ?? "");
+
+  // Sync when DatePicker updates value from calendar selection
+  const displayValue = value !== undefined && value !== rawInput ? value : rawInput;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setRawInput(val);
+    if (onChange) onChange(val);
+  };
+
+  return (
+    <div className="flex w-full items-center rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 hover:border-blue-400">
+      <input
+        ref={ref}
+        value={displayValue}
+        onChange={handleChange}
+        placeholder={placeholder ?? "DD/MM/YYYY"}
+        className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+      />
+      <CalendarDays
+        onClick={onClick}
+        className="h-4 w-4 text-blue-500 cursor-pointer shrink-0"
+      />
+    </div>
+  );
+});
+
 export default function RequestForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
-  // SMART FEATURE: If the client clicked "Book" directly from a caregiver's profile,
-  // we can grab their ID from the URL (e.g., /request?caregiverId=5)
   const targetCaregiverId = searchParams.get("caregiverId") || "";
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
-  // Safely manage checkbox arrays
   const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
     if (checked) {
@@ -42,7 +98,18 @@ export default function RequestForm() {
     }
   };
 
-  // BACKEND CONNECTION: Send JSON payload to POST /api/requests
+  // Called when user types manually in the start date input
+  const handleStartRawChange = (val: string) => {
+    const parsed = parseDDMMYYYY(val);
+    if (parsed) setStartDate(parsed);
+  };
+
+  // Called when user types manually in the end date input
+  const handleEndRawChange = (val: string) => {
+    const parsed = parseDDMMYYYY(val);
+    if (parsed) setEndDate(parsed);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
@@ -56,10 +123,9 @@ export default function RequestForm() {
     }
 
     const formData = new FormData(e.currentTarget);
-    
-    // Map the form inputs exactly to the backend's expected snake_case variables
-    const startDate = String(formData.get("start_date") || "");
-    const endDate = String(formData.get("end_date") || "");
+
+    const startDateStr = startDate ? formatDateDDMMYYYY(startDate) : "";
+    const endDateStr   = endDate   ? formatDateDDMMYYYY(endDate)   : "";
 
     const payload = {
       caregiver_id: targetCaregiverId ? parseInt(targetCaregiverId) : null,
@@ -67,15 +133,14 @@ export default function RequestForm() {
       day_category: formData.get("day_category"),
       care_category: formData.get("care_category"),
       gender_preference: formData.get("gender_preference") || null,
-      start_date: startDate,
-      end_date: endDate,
+      start_date: startDateStr,
+      end_date: endDateStr,
       min_compensation: Number(formData.get("min_compensation")),
       max_compensation: Number(formData.get("max_compensation")),
       medical_specialties_needed: formData.get("medical_specialties_needed") || null,
-      skills_needed: selectedSkills, // Pass as an array, the backend will serialize it
+      skills_needed: selectedSkills,
     };
 
-    // Frontend validation guardrails
     if (payload.min_compensation > payload.max_compensation) {
       setError("Minimum compensation cannot be greater than maximum.");
       setSubmitting(false);
@@ -104,8 +169,6 @@ export default function RequestForm() {
       if (response.ok) {
         const data = await response.json().catch(() => ({}));
         const requestId = data?.requestId;
-
-        // Move client into matching flow after request is created.
         if (requestId) {
           navigate(`/match-results?requestId=${requestId}`);
         } else {
@@ -122,23 +185,25 @@ export default function RequestForm() {
     }
   };
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
+    <div className="min-h-screen bg-linear-to-br from-blue-200 via-white to-emerald-200 py-12">
       <main className="flex flex-col items-center justify-center px-4 sm:px-6">
         <div className="w-full max-w-4xl rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-md ring-2 ring-gray-300 sm:p-10">
-          
+
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-extrabold text-blue-900">
               Request a Caregiver
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              {targetCaregiverId 
-                ? "You are booking a specific caregiver. Fill out the job details below." 
+              {targetCaregiverId
+                ? "You are booking a specific caregiver. Fill out the job details below."
                 : "Fill out your requirements, and we will find the perfect matches."}
             </p>
           </div>
 
-          {/* Error Banner */}
           {error && (
             <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
               {error}
@@ -146,14 +211,14 @@ export default function RequestForm() {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-            
+
             {/* Job Details Section */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-blue-800">
                 Job Details
               </h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                
+
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-bold text-gray-700">
                     Service Type
@@ -164,8 +229,8 @@ export default function RequestForm() {
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Service Type</option>
-                    <option value="hourly">Hourly (Category A/B/C)</option>
-                    <option value="live_in">Full Day / Live-in (Category D)</option>
+                    <option value="live_out">Live-out (Category A/B/C)</option>
+                    <option value="live_in">Live-in (Category D)</option>
                   </select>
                 </div>
 
@@ -181,8 +246,8 @@ export default function RequestForm() {
                     <option value="">Select Duration Category</option>
                     <option value="A">A - 3 Hours</option>
                     <option value="B">B - 6 Hours</option>
-                    <option value="C">C - 12 Hours</option>
-                    <option value="D">D - 24 Hours</option>
+                    <option value="C">C - 9 Hours</option>
+                    <option value="D">D - 12 Hours</option>
                   </select>
                 </div>
 
@@ -210,6 +275,7 @@ export default function RequestForm() {
                   </label>
                   <select
                     name="gender_preference"
+                    
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">No Preference</option>
@@ -218,31 +284,52 @@ export default function RequestForm() {
                   </select>
                 </div>
 
-                <div>
+                {/* ── Start Date ── */}
+                <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-bold text-gray-700">
                     Start Date
                   </label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    required
-                    min={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <DatePicker
+                    selected={startDate}
+                    onChange={(date: Date | null) => setStartDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="DD/MM/YYYY"
+                    minDate={today}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    customInput={
+                      <DateInput
+                        placeholder="DD/MM/YYYY"
+                        onChange={handleStartRawChange}
+                      />
+                    }
                   />
                 </div>
 
-                <div>
+                {/* ── End Date ── */}
+                <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-bold text-gray-700">
                     End Date
                   </label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    required
-                    min={new Date().toISOString().split("T")[0]}
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <DatePicker
+                    selected={endDate}
+                    onChange={(date: Date | null) => setEndDate(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="DD/MM/YYYY"
+                    minDate={startDate ?? today}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    customInput={
+                      <DateInput
+                        placeholder="DD/MM/YYYY"
+                        onChange={handleEndRawChange}
+                      />
+                    }
                   />
                 </div>
+
               </div>
             </section>
 

@@ -24,6 +24,8 @@ export default [
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
   route("dashboard/caregiver", "components/requests/caregiver-dashboard.tsx"),
+  // emegency 
+  route("emergency", "components/profile/emergencyalert.tsx"),
 
   
   // Request Flow

@@ -132,10 +132,19 @@ export default function EditClientProfile() {
 
   const handleAllergyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
-    setAllergies(prev =>
-      checked ? [...prev, value] : prev.filter(a => a !== value)
-    );
-  };
+
+    if (value === "none") {
+    // If "None" is checked, clear everything else. If unchecked, clear all.
+    setAllergies(checked ? ["none"] : []);
+    return;
+  }
+
+setAllergies(prev => {
+    // Remove "none" if a specific allergy is being selected
+    const filtered = prev.filter(a => a !== "none");
+    return checked ? [...filtered, value] : filtered.filter(a => a !== value);
+  });
+};
 
   const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
@@ -153,11 +162,14 @@ export default function EditClientProfile() {
     const token = getToken() ?? "";
     try {
       // Correct route: POST /api/client/upload-picture
-      const res = await fetch(apiUrl("/api/client/upload-picture"), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
+const res = await fetch(apiUrl("/api/client/upload-picture"), {
+      method: "POST", 
+      headers: { 
+        "Authorization": `Bearer ${getToken()}` 
+        // REMINDER: Do NOT add Content-Type here, it breaks FormData
+      },
+      body: fd,
+    });
       if (!res.ok) {
         setError("Profile picture upload failed. Please try again.");
       }
@@ -203,11 +215,14 @@ export default function EditClientProfile() {
 
     try {
       // Correct URL: PUT /api/client/edit-profile (not /clients/profile)
-      const res = await fetch(apiUrl("/api/client/edit-profile"), {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(body),
-      });
+const res = await fetch(apiUrl("/api/client/edit-profile"), {
+  method: "PUT",
+  headers: {
+    ...getAuthHeaders(),        
+    "Content-Type": "application/json", 
+  },
+  body: JSON.stringify(body),
+});
 
       const data = await res.json().catch(() => ({}));
 

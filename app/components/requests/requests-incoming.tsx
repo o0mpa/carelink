@@ -22,7 +22,7 @@ interface IncomingRequest {
     gender: string;
 }
 
-// Shape returned by GET /requests/:requestId/details (getRequestDetailsForCaregiver)
+//  GET /requests/:requestId/details (getRequestDetailsForCaregiver)
 interface ClientDetail {
     request_id: number;
     service_type: string;
@@ -354,7 +354,7 @@ export default function RequestsPage() {
                 // ── END HARDCODED ────────────────────────────────────────────
 
                 // ── REAL API ─────────────────────────────────────────────────
-                const { data: reqData } = await axiosInstance.get("/requests/incoming");
+                const { data: reqData } = await axiosInstance.get("/requests/caregivers/incoming");
                 const incoming: IncomingRequest[] = (reqData.requests ?? []).map(
                     (r: IncomingRequest) => ({
                         ...r,
@@ -365,7 +365,7 @@ export default function RequestsPage() {
                 setRequests(incoming);
                 if (reqData.caregiverId) {
                     const { data: availData } = await axiosInstance.get(
-                        `/requests/caregiver-availability/${reqData.caregiverId}`
+                        `/requests/caregivers/${reqData.caregiverId}/availability`
                     );
                     setBookedDates(
                         (availData.bookedDates ?? []).map((b: BookedDate | string) =>
@@ -397,7 +397,7 @@ export default function RequestsPage() {
             setSelectedDetail(data.request);
             // ── END REAL API ─────────────────────────────────────────────────
         } catch {
-            // Graceful fallback: build from list data we already have
+
             setSelectedDetail({
                 ...req,
                 gender_preference: null,

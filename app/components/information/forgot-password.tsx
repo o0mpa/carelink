@@ -4,10 +4,8 @@ import { useNavigate, Link } from "react-router";
 export default function ResetPassword() {
   const navigate = useNavigate();
 
-  // ── Step ──────────────────────────────────────────────────────────────────
   const [step, setStep] = useState(1);
 
-  // ── Step 1 state ──────────────────────────────────────────────────────────
   const [username, setUsername]           = useState("");
   const [question1, setQuestion1]         = useState<string | null>(null);
   const [question2, setQuestion2]         = useState<string | null>(null);
@@ -16,18 +14,14 @@ export default function ResetPassword() {
   const [fetchingQ, setFetchingQ]         = useState(false);
   const [usernameError, setUsernameError] = useState("");
 
-  // ── Step 2 state ──────────────────────────────────────────────────────────
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitLoading, setSubmitLoading]     = useState(false);
 
-  // ── Shared error ──────────────────────────────────────────────────────────
   const [error, setError] = useState("");
 
-  // ── Debounce ref so we don't fire on every keystroke ─────────────────────
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Fetch questions whenever username changes (debounced 600ms) ───────────
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     setQuestion1(null);
@@ -41,7 +35,8 @@ export default function ResetPassword() {
     debounceRef.current = setTimeout(async () => {
       setFetchingQ(true);
       try {
-        const res = await fetch(`http://localhost:5000/api/auth/security-questions/${encodeURIComponent(value.trim())}`
+        const res = await fetch(
+          `http://localhost:5000/api/auth/security-questions/${encodeURIComponent(value.trim())}`
         );
         const data = await res.json();
 
@@ -52,8 +47,8 @@ export default function ResetPassword() {
           return;
         }
 
-      setQuestion1(data.security_question1);
-      setQuestion2(data.security_question2);
+        setQuestion1(data.security_question1);
+        setQuestion2(data.security_question2);
         setUsernameError("");
       } catch {
         setUsernameError("Cannot connect to server. Please try again.");
@@ -63,8 +58,8 @@ export default function ResetPassword() {
     }, 600);
   };
 
-  // ── Step 1 submit 
-  const handleVerify = (e: React.FormEvent) => {
+  // ── Step 1: verify answers with backend before proceeding ─────────────────
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -76,10 +71,37 @@ export default function ResetPassword() {
       setError("Please answer both security questions.");
       return;
     }
-    setStep(2);
+
+    setSubmitLoading(true);
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/auth/forgot-password-security",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username:        username.trim(),
+            securityAnswer1: answer1.trim(),
+            securityAnswer2: answer2.trim(),
+            newPassword:     "VERIFY_ONLY_PLACEHOLDER",
+          }),
+        }
+      );
+
+      if (res.status === 401) {
+        setError("Incorrect security answers. Please try again.");
+        return;
+      }
+
+      setStep(2);
+    } catch {
+      setError("Cannot connect to server. Please try again.");
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
-  // ── Step 2 submit 
+  // ── Step 2: actual password reset ─────────────────────────────────────────
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -129,7 +151,7 @@ export default function ResetPassword() {
     <div className="flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-blue-200 via-white to-emerald-200 p-4">
       <div className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-8 shadow-lg">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="mb-5 text-center">
           <div className="mx-auto mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-r from-blue-100 to-emerald-100">
             <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,29 +166,23 @@ export default function ResetPassword() {
               ? "Enter your username to load your security questions"
               : "Enter your new password"}
           </p>
-          {/* Step indicators */}
           <div className="mt-3 flex items-center justify-center gap-2">
             <div className={`h-2 w-8 rounded-full transition-colors ${step === 1 ? "bg-emerald-500" : "bg-emerald-200"}`} />
             <div className={`h-2 w-8 rounded-full transition-colors ${step === 2 ? "bg-emerald-500" : "bg-emerald-200"}`} />
           </div>
         </div>
 
-        {/* ── Shared error banner ── */}
         {error && (
           <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-center text-sm font-semibold text-red-600">
             {error}
           </div>
         )}
 
-        {/* STEP 1 — Username + Security Questions (auto-loaded) */}
+        {/* STEP 1 */}
         {step === 1 && (
           <form onSubmit={handleVerify} className="space-y-5">
-
-            {/* Username input */}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-slate-500">
-                Username
-              </label>
+              <label className="text-xs font-bold uppercase text-slate-500">Username</label>
               <div className="relative">
                 <input
                   type="text"
@@ -182,16 +198,13 @@ export default function ResetPassword() {
                       : "border-gray-200"
                   }`}
                 />
-                {/* Spinner while fetching */}
                 {fetchingQ && (
                   <svg className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-emerald-500"
                     fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10"
-                      stroke="currentColor" strokeWidth="4" />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
                 )}
-                {/* Checkmark when found */}
                 {!fetchingQ && question1 && (
                   <svg className="absolute right-2.5 top-2.5 h-4 w-4 text-emerald-500"
                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -207,23 +220,16 @@ export default function ResetPassword() {
               )}
             </div>
 
-            {/* Security Questions — appear automatically after username is found */}
             {question1 && question2 && (
               <div className="animate-in fade-in slide-in-from-top-2 space-y-5 duration-300">
-
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-gray-200" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                    Your Security Questions
-                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Your Security Questions</span>
                   <div className="h-px flex-1 bg-gray-200" />
                 </div>
 
-                {/* Question 1 */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-slate-500">
-                    Question 1
-                  </label>
+                  <label className="text-xs font-bold uppercase text-slate-500">Question 1</label>
                   <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900 ring-1 ring-blue-100">
                     {question1}
                   </div>
@@ -237,11 +243,8 @@ export default function ResetPassword() {
                   />
                 </div>
 
-                {/* Question 2 */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-slate-500">
-                    Question 2
-                  </label>
+                  <label className="text-xs font-bold uppercase text-slate-500">Question 2</label>
                   <div className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-900 ring-1 ring-blue-100">
                     {question2}
                   </div>
@@ -257,30 +260,25 @@ export default function ResetPassword() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-3 font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={submitLoading}
+                  className="w-full rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-3 font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
                 >
-                  Verify & Continue
+                  {submitLoading ? "Verifying..." : "Verify & Continue"}
                 </button>
               </div>
             )}
 
             <div className="pt-1 text-center">
-              <Link
-                to="/login"
-                className="text-xs font-semibold text-gray-500 hover:text-gray-800 hover:underline"
-              >
+              <Link to="/login" className="text-xs font-semibold text-gray-500 hover:text-gray-800 hover:underline">
                 ← Back to Sign In
               </Link>
             </div>
           </form>
         )}
 
-        {/*  STEP 2 — New Password*/}
+        {/* STEP 2 */}
         {step === 2 && (
-          <form
-            onSubmit={handleReset}
-            className="animate-in fade-in slide-in-from-right-4 space-y-5 duration-300"
-          >
+          <form onSubmit={handleReset} className="animate-in fade-in slide-in-from-right-4 space-y-5 duration-300">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">New Password</label>
               <input
@@ -306,28 +304,25 @@ export default function ResetPassword() {
             </div>
 
             {confirmPassword && password !== confirmPassword && (
-              <p className="text-center text-xs font-semibold text-red-600">
-                Passwords do not match
-              </p>
+              <p className="text-center text-xs font-semibold text-red-600">Passwords do not match</p>
             )}
-                     <p className={`text-xs ${password.length >= 8 ? "text-emerald-600" : "text-gray-400"}`}>
-                     Minimum 8 characters
-                    </p>
-                    <p className={`text-xs ${/[A-Z]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
-                     At least 1 capital letter
-                    </p>
-                    <p className={`text-xs ${/[0-9]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>
-                     At least 1 number
-                    </p> 
+
+            <div className="space-y-1 rounded-lg bg-gray-50 p-1">
+              <p className="text-xs font-semibold text-gray-600">Password Requirements:</p>
+              <p className={`text-xs ${password.length >= 8 ? "text-emerald-600" : "text-gray-400"}`}>✓ Minimum 8 characters</p>
+              <p className={`text-xs ${/[A-Z]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>✓ At least 1 capital letter</p>
+              <p className={`text-xs ${/[0-9]/.test(password) ? "text-emerald-600" : "text-gray-400"}`}>✓ At least 1 number</p>
+            </div>
+
             <button
               type="submit"
               disabled={
-          submitLoading ||
-      password !== confirmPassword ||
-      password.length < 8 ||
-      !/[A-Z]/.test(password) ||
-      !/[0-9]/.test(password)
-          }
+                submitLoading ||
+                password !== confirmPassword ||
+                password.length < 8 ||
+                !/[A-Z]/.test(password) ||
+                !/[0-9]/.test(password)
+              }
               className="w-full rounded-xl bg-linear-to-r from-blue-600 to-teal-500 py-3 font-bold text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
             >
               {submitLoading ? "Updating..." : "Update Password"}
@@ -336,12 +331,7 @@ export default function ResetPassword() {
             <div className="text-center">
               <button
                 type="button"
-                onClick={() => {
-                  setStep(1);
-                  setPassword("");
-                  setConfirmPassword("");
-                  setError("");
-                }}
+                onClick={() => { setStep(1); setPassword(""); setConfirmPassword(""); setError(""); }}
                 className="text-xs font-semibold text-gray-500 hover:text-gray-800 hover:underline"
               >
                 ← Go back

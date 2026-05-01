@@ -261,9 +261,9 @@ export default function PaymentForm() {
 
       {/* Dev banner */}
       {(USE_MOCK || DEV_BYPASS) && (
-        <div className="bg-yellow-400 text-yellow-900 text-sm font-semibold py-2 px-4 flex flex-wrap justify-center gap-x-6 gap-y-1 text-center">
-          {USE_MOCK   && <span> MOCK — scenario: <code className="font-mono">{MOCK_SCENARIO}</code></span>}
-          {DEV_BYPASS && <span> DEV BYPASS — requestId: <code className="font-mono">{requestId}</code></span>}
+        <div className="bg-gray-300 text-gray-500 text-sm font-semibold py-2 px-4 flex flex-wrap justify-center gap-x-6 gap-y-1 text-center">
+          {/* {USE_MOCK   && <span> MOCK — scenario: <code className="font-mono">{MOCK_SCENARIO}</code></span>}
+          {DEV_BYPASS && <span> DEV BYPASS — requestId: <code className="font-mono">{requestId}</code></span>} */}
           {USE_MOCK && (
             <span className="w-full text-xs font-normal mt-0.5">
               TAP sandbox test card: <code className="font-mono">4111 1111 1111 1111</code> — Exp: any future date — CVV: any 3 digits — OTP: <code className="font-mono">000000</code>

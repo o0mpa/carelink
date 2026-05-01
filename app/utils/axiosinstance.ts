@@ -7,7 +7,7 @@ const axiosInstance = axios.create({
 
 // Attach JWT token from localStorage to every request
 axiosInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("carelink_token");
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });

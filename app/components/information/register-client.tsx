@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { CalendarDays } from "lucide-react";
 
 export function meta() {
   return [
@@ -8,45 +11,101 @@ export function meta() {
   ];
 }
 
-// FIX: age is calculated from DOB on the frontend and sent as a hidden field.
-// The backend also recalculates it server-side so this is just for display + submission.
-const calculateAge = (dob: string): number | string => {
-  if (!dob) return "";
-  const today     = new Date();
-  const birthDate = new Date(dob);
-  let age         = today.getFullYear() - birthDate.getFullYear();
-  const m         = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+const calculateAgeFromDate = (date: Date): number => {
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const m = today.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
   return age < 0 ? 0 : age;
 };
+
+const formatDateDDMMYYYY = (date: Date): string => {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+const parseDDMMYYYY = (value: string): Date | null => {
+  const parts = value.split("/");
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts.map(Number);
+  if (!dd || !mm || !yyyy || yyyy < 1900) return null;
+  const date = new Date(yyyy, mm - 1, dd);
+  if (isNaN(date.getTime())) return null;
+  return date;
+};
+
+const DateInput = forwardRef<
+  HTMLInputElement,
+  {
+    value?: string;
+    onClick?: () => void;
+    onChange?: (val: string) => void;
+    placeholder?: string;
+  }
+>(({ value, onClick, onChange, placeholder }, ref) => {
+  const [rawInput, setRawInput] = useState(value ?? "");
+  const displayValue = value !== undefined && value !== rawInput ? value : rawInput;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setRawInput(val);
+    if (onChange) onChange(val);
+  };
+
+  return (
+    <div className="flex w-full items-center rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 hover:border-blue-400">
+      <input
+        ref={ref}
+        value={displayValue}
+        onChange={handleChange}
+        placeholder={placeholder || "DD/MM/YYYY"}
+        className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+      />
+      <CalendarDays
+        onClick={onClick}
+        className="h-4 w-4 text-blue-500 cursor-pointer shrink-0"
+      />
+    </div>
+  );
+});
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
-  // ── Password match check ──────────────────────────────────────────────────
-  if (formData.get("password") !== formData.get("confirmPassword")) {
+  const password        = String(formData.get("password")        ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (password !== confirmPassword) {
     return { error: "Passwords do not match. Please try again." };
   }
+
+  if (
+    password.length < 8 ||
+    !/[A-Z]/.test(password) ||
+    !/[a-z]/.test(password) ||
+    !/[0-9]/.test(password) ||
+    !/[!@#$%^&*(),.?":{}|<>]/.test(password)
+  ) {
+    return {
+      error:
+        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character (!@#$%^&*…).",
+    };
+  }
+
   formData.delete("confirmPassword");
 
-  // ── Skills validation ─────────────────────────────────────────────────────
   const skills = formData.getAll("skills") as string[];
   if (skills.length === 0) {
     return { error: "Please select at least one skill needed." };
   }
-  // FIX: backend does JSON.stringify(skills) on the array it receives via
-  // formData.getAll(). Multer parses repeated fields into an array automatically,
-  // so sending skills as repeated multipart fields works correctly.
-  // No manual stringification needed here.
 
-  // ── Allergies: collect, merge "other specify", filter "none" ──────────────
   const allergies    = formData.getAll("allergies").map(String).filter(Boolean);
   const otherAllergy = String(formData.get("otherAllergiesSpecify") ?? "").trim();
   if (otherAllergy) allergies.push(otherAllergy);
   const finalAllergies = allergies.filter((a) => a !== "none");
 
-  // FIX: backend receives allergies via formData.getAll("allergies") and calls
-  // JSON.stringify() on it. Sending as repeated fields is correct.
   formData.delete("allergies");
   finalAllergies.forEach((a) => formData.append("allergies", a));
   formData.delete("otherAllergiesSpecify");
@@ -54,16 +113,13 @@ export async function action({ request }: { request: Request }) {
   try {
     const response = await fetch("http://localhost:5000/api/auth/signup-client", {
       method: "POST",
-      // FIX: do NOT set Content-Type header — let the browser set it automatically
-      // with the correct multipart/form-data boundary for file uploads.
       body: formData,
     });
 
     if (response.ok) {
-     return redirect("/login?registered=true");
+      return redirect("/login?registered=true");
     }
 
-    // Parse error response safely
     const errorText = await response.text().catch(() => "");
     let errorData: Record<string, unknown> = {};
     try { errorData = errorText ? JSON.parse(errorText) : {}; } catch { /* */ }
@@ -82,13 +138,15 @@ export async function action({ request }: { request: Request }) {
 }
 
 export default function RegisterClient() {
-  const actionData  = useActionData<{ error?: string }>();
-  const navigation  = useNavigation();
+  const actionData   = useActionData<{ error?: string }>();
+  const navigation   = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
   const [selectedCity,      setSelectedCity]      = useState("");
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [selectedDate,      setSelectedDate]      = useState<Date | null>(null);
   const [calculatedAge,     setCalculatedAge]      = useState<number | string>("");
+  const [password,          setPassword]           = useState("");
 
   const handleAllergyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
@@ -97,17 +155,35 @@ export default function RegisterClient() {
     );
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCalculatedAge(calculateAge(e.target.value));
+  const handleDateSelect = (date: Date | null) => {
+    setSelectedDate(date);
+    if (date) setCalculatedAge(calculateAgeFromDate(date));
+    else setCalculatedAge("");
   };
 
-  const isNoneSelected   = selectedAllergies.includes("none");
+  const handleDateRawChange = (val: string) => {
+    const parsed = parseDDMMYYYY(val);
+    if (parsed) {
+      setSelectedDate(parsed);
+      setCalculatedAge(calculateAgeFromDate(parsed));
+    }
+  };
+
+  const isNoneSelected    = selectedAllergies.includes("none");
   const hasOtherAllergies = selectedAllergies.some((a) => a !== "none");
 
-  const foodAllergies       = ["Peanuts","Tree Nuts","Milk / Dairy","Eggs","Fish","Shellfish","Soy","Wheat / Gluten","Sesame","Strawberries"];
-  const medAllergies        = ["Penicillin","Antibiotics (General)","Aspirin","Ibuprofen / NSAIDS","Sulfa Drugs","Codeine"];
-  const envAllergies        = ["Dust","Pollen","Mold","Pet Dander","Insect Stings"];
-  const otherAllergiesList  = ["Latex","Certain Fabrics","Cleaning Chemicals","Perfumes / Fragrances"];
+  const foodAllergies      = ["Peanuts","Tree Nuts","Milk / Dairy","Eggs","Fish","Shellfish","Soy","Wheat / Gluten","Sesame","Strawberries"];
+  const medAllergies       = ["Penicillin","Antibiotics (General)","Aspirin","Ibuprofen / NSAIDS","Sulfa Drugs","Codeine"];
+  const envAllergies       = ["Dust","Pollen","Mold","Pet Dander","Insect Stings"];
+  const otherAllergiesList = ["Latex","Certain Fabrics","Cleaning Chemicals","Perfumes / Fragrances"];
+
+  const strengthChecks = [
+    { label: "Minimum 8 characters",                       ok: password.length >= 8 },
+    { label: "At least 1 uppercase letter",                ok: /[A-Z]/.test(password) },
+    { label: "At least 1 lowercase letter",                ok: /[a-z]/.test(password) },
+    { label: "At least 1 number",                          ok: /[0-9]/.test(password) },
+    { label: "At least 1 special character (!@#$%^&*...)", ok: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
+  ];
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
@@ -126,7 +202,6 @@ export default function RegisterClient() {
             </div>
           )}
 
-          {/* encType="multipart/form-data" is required for file uploads */}
           <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
 
             {/* ── Account Security ── */}
@@ -143,12 +218,24 @@ export default function RegisterClient() {
                   <input type="email" name="email" required
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
-                  <input type="password" name="password" required minLength={8}
-                    placeholder="Min 8 chars, 1 uppercase, 1 number"
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="password" name="password" required minLength={8}
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 8 chars, 1 Capital, 1 Number, 1 Special"
+                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="mt-2 space-y-1">
+                    {strengthChecks.map(({ label, ok }) => (
+                      <p key={label} className={`text-xs ${ok ? "text-blue-600" : "text-gray-400"}`}>
+                        {ok ? "✓" : "○"} {label}
+                      </p>
+                    ))}
+                  </div>
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
                   <input type="password" name="confirmPassword" required minLength={8}
@@ -156,7 +243,6 @@ export default function RegisterClient() {
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
-                {/* Security Questions */}
                 <div className="mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4 md:col-span-2">
                   <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -201,25 +287,43 @@ export default function RegisterClient() {
                   <select name="gender" required
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Gender</option>
-                    {/* FIX: backend matching uses cp.gender = request.gender_preference.
-                        Caregiver signup uses "Male"/"Female" (capitalized).
-                        Client must match the same casing for matching to work. */}
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
                 </div>
-                <div>
+
+                {/* ── Date of Birth ── */}
+                <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
-                  <input type="date" name="date_of_birth" required onChange={handleDateChange}
-                    className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:outline-none" />
+                  <input
+                    type="hidden"
+                    name="date_of_birth"
+                    value={selectedDate ? formatDateDDMMYYYY(selectedDate) : ""}
+                  />
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date: Date | null) => handleDateSelect(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="DD/MM/YYYY"
+                    maxDate={new Date()}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    customInput={
+                      <DateInput
+                        placeholder="DD/MM/YYYY"
+                        onChange={handleDateRawChange}
+                      />
+                    }
+                  />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Age (auto-calculated)</label>
-                  {/* FIX: age is calculated from DOB and sent as a hidden read-only field.
-                      The backend also recalculates it — this is just for display purposes. */}
                   <input type="number" name="age" value={calculatedAge} readOnly required
                     className="w-full cursor-not-allowed rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none" />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Phone Number</label>
                   <input type="tel" name="phone_number" required maxLength={11}
@@ -364,14 +468,13 @@ export default function RegisterClient() {
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
 
-                {/* Document Uploads */}
                 <div className="mt-2 rounded-xl border-2 border-blue-200 bg-blue-50/30 p-4 md:col-span-2">
                   <h3 className="mb-3 font-semibold text-blue-900">Document Uploads</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {[
-                      { label: "Upload National ID",  name: "national_id" },
-                      { label: "Upload Diagnoses",    name: "diagnoses"   },
-                      { label: "Upload Conditions",   name: "conditions"  },
+                      { label: "Upload National ID", name: "national_id" },
+                      { label: "Upload Diagnoses",   name: "diagnoses"   },
+                      { label: "Upload Conditions",  name: "conditions"  },
                     ].map(({ label, name }) => (
                       <div key={name}>
                         <label className="mb-1 block text-xs font-semibold text-gray-700">{label}</label>
@@ -390,13 +493,13 @@ export default function RegisterClient() {
               <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
                 <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[
-                    { value: "physical_care",         label: "Physical care"           },
-                    { value: "medication_management", label: "Medication management"   },
-                    { value: "meal_preparation",      label: "Meal preparation"        },
-                    { value: "housekeeping",          label: "Housekeeping and cleaning"},
-                    { value: "emotional_support",     label: "Emotional support"       },
-                    { value: "transportation",        label: "Transportation"          },
-                    { value: "health_monitoring",     label: "Health monitoring"       },
+                    { value: "physical_care",         label: "Physical care"            },
+                    { value: "medication_management", label: "Medication management"    },
+                    { value: "meal_preparation",      label: "Meal preparation"         },
+                    { value: "housekeeping",          label: "Housekeeping and cleaning" },
+                    { value: "emotional_support",     label: "Emotional support"        },
+                    { value: "transportation",        label: "Transportation"           },
+                    { value: "health_monitoring",     label: "Health monitoring"        },
                   ].map(({ value, label }) => (
                     <label key={value} className="flex items-center gap-2 text-sm text-gray-700">
                       <input type="checkbox" name="skills" value={value}
@@ -406,7 +509,6 @@ export default function RegisterClient() {
                   ))}
                 </div>
                 <div>
-                  {/* FIX: field name is medical_specialties_required — matches backend INSERT query */}
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Medical Specialties Required:</label>
                   <input type="text" name="medical_specialties_required"
                     placeholder="e.g., Alzheimer's, Diabetes"

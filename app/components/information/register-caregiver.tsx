@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Link, Form, redirect, useActionData, useNavigation } from "react-router";
 import { apiUrl } from "~/utils/api";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { CalendarDays } from "lucide-react";
 
 export function meta() {
   return [
@@ -9,17 +12,69 @@ export function meta() {
   ];
 }
 
-// ─── Backend connection ────────────────────────────────────────────────────────
-// Route  : POST /api/auth/signup-caregiver
-// Multer : upload.fields([education_docs, certificates, national_id,
-//                          criminal_record, references])
-// On 201 : caregiver is set to approval_status = 'Pending'
-//          → redirect to /login?pending=true  (NOT ?registered=true)
-// ──────────────────────────────────────────────────────────────────────────────
+const formatDateDDMMYYYY = (date: Date): string => {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+const parseDDMMYYYY = (value: string): Date | null => {
+  const parts = value.split("/");
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts.map(Number);
+  if (!dd || !mm || !yyyy || yyyy < 1900) return null;
+  const date = new Date(yyyy, mm - 1, dd);
+  if (isNaN(date.getTime())) return null;
+  return date;
+};
+
+const calculateAgeFromDate = (date: Date): number => {
+  const today = new Date();
+  let age = today.getFullYear() - date.getFullYear();
+  const m = today.getMonth() - date.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
+  return age < 0 ? 0 : age;
+};
+
+const DateInput = forwardRef<
+  HTMLInputElement,
+  {
+    value?: string;
+    onClick?: () => void;
+    onChange?: (val: string) => void;
+    placeholder?: string;
+  }
+>(({ value, onClick, onChange, placeholder }, ref) => {
+  const [rawInput, setRawInput] = useState(value ?? "");
+  const displayValue = value !== undefined && value !== rawInput ? value : rawInput;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setRawInput(val);
+    if (onChange) onChange(val);
+  };
+
+  return (
+    <div className="flex w-full items-center rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500 hover:border-emerald-400">
+      <input
+        ref={ref}
+        value={displayValue}
+        onChange={handleChange}
+        placeholder={placeholder || "DD/MM/YYYY"}
+        className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
+      />
+      <CalendarDays
+        onClick={onClick}
+        className="h-4 w-4 text-emerald-500 cursor-pointer shrink-0"
+      />
+    </div>
+  );
+});
+
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
 
-  // ── 1. Passwords match ──────────────────────────────────────────────────────
   const password        = String(formData.get("password")        ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
@@ -27,8 +82,6 @@ export async function action({ request }: { request: Request }) {
     return { error: "Passwords do not match. Please try again." };
   }
 
-  // ── 2. Password strength — mirrors backend validation exactly ───────────────
-  // Backend check: length >= 8, /[A-Z]/, /[a-z]/, /[0-9]/, /[!@#$%^&*(),.?":{}|<>]/
   if (
     password.length < 8 ||
     !/[A-Z]/.test(password) ||
@@ -42,18 +95,13 @@ export async function action({ request }: { request: Request }) {
     };
   }
 
-  // ── 3. At least one skill required ─────────────────────────────────────────
   const skills = formData.getAll("skills") as string[];
   if (skills.length === 0) {
     return { error: "Please select at least one skill." };
   }
 
-  // ── 4. Remove confirmPassword before sending to backend ────────────────────
   formData.delete("confirmPassword");
 
-  // ── 5. Send to backend ─────────────────────────────────────────────────────
-  // Do NOT set Content-Type — let the browser set multipart/form-data
-  // with the correct boundary for file uploads automatically.
   try {
     const response = await fetch(
       apiUrl("/api/auth/signup-caregiver"),
@@ -61,22 +109,18 @@ export async function action({ request }: { request: Request }) {
     );
 
     if (response.ok) {
-      // Caregiver accounts start as 'Pending' — shows the pending banner in login
       return redirect("/login?pending=true");
     }
 
-    // Safely parse the error body (backend may return non-JSON on some errors)
     const errorText = await response.text().catch(() => "");
     let errorData: Record<string, unknown> = {};
     try {
       errorData = errorText ? JSON.parse(errorText) : {};
-    } catch {
-      /* non-JSON body */
-    }
+    } catch { /* non-JSON body */ }
 
     const msg =
       (typeof errorData.message === "string" && errorData.message) ||
-      (typeof errorData.error   === "string" && errorData.error) ||
+      (typeof errorData.error   === "string" && errorData.error)   ||
       errorText.trim() ||
       "Registration failed. Please try again.";
 
@@ -91,30 +135,28 @@ export default function RegisterCaregiver() {
   const navigation   = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  const [selectedCity, setSelectedCity] = useState("");
-  const [password,     setPassword]     = useState("");
+  const [selectedCity,  setSelectedCity]  = useState("");
+  const [password,      setPassword]      = useState("");
+  const [selectedDate,  setSelectedDate]  = useState<Date | null>(null);
+  const [calculatedAge, setCalculatedAge] = useState<number | string>("");
 
-  // DOB -> age stays in sync.
-  // The backend also recalculates age server-side via calculateAge(date_of_birth).
-  const [dob, setDob] = useState("");
-  const [age, setAge] = useState("");
-
-  const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setDob(val);
-    if (val) {
-      const birth = new Date(val);
-      const today = new Date();
-      let a = today.getFullYear() - birth.getFullYear();
-      const m = today.getMonth() - birth.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) a--;
-      setAge(a >= 0 ? String(a) : "0");
+  const handleDateSelect = (date: Date | null) => {
+    setSelectedDate(date);
+    if (date) {
+      setCalculatedAge(calculateAgeFromDate(date));
     } else {
-      setAge("");
+      setCalculatedAge("");
     }
   };
 
-  // Password strength indicators — must match the backend regex checks exactly
+  const handleDateRawChange = (val: string) => {
+    const parsed = parseDDMMYYYY(val);
+    if (parsed) {
+      setSelectedDate(parsed);
+      setCalculatedAge(calculateAgeFromDate(parsed));
+    }
+  };
+
   const strengthChecks = [
     { label: "Minimum 8 characters",                        ok: password.length >= 8 },
     { label: "At least 1 uppercase letter",                 ok: /[A-Z]/.test(password) },
@@ -138,17 +180,15 @@ export default function RegisterCaregiver() {
             Join our network of professional caregivers.
           </p>
 
-          {/* Error banner */}
           {actionData?.error && (
             <div className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-800 ring-1 ring-red-200">
               {actionData.error}
             </div>
           )}
 
-          {/* encType="multipart/form-data" is required for file uploads */}
           <Form method="post" encType="multipart/form-data" className="flex flex-col gap-8">
 
-            {/* ── 1. Account Security ──────────────────────────────────────── */}
+            {/* ── 1. Account Security ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
                 Account Security
@@ -165,7 +205,6 @@ export default function RegisterCaregiver() {
                   <input type="email" name="email" required className={INPUT_CLS} />
                 </div>
 
-                {/* Password with live strength indicators */}
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Password</label>
                   <input
@@ -188,9 +227,7 @@ export default function RegisterCaregiver() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">
-                    Confirm Password
-                  </label>
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm Password</label>
                   <input
                     type="password"
                     name="confirmPassword"
@@ -201,60 +238,33 @@ export default function RegisterCaregiver() {
                   />
                 </div>
 
-                {/* Password Recovery Questions */}
                 <div className="mt-4 rounded-xl border-2 border-gray-200 bg-gray-50 p-4 md:col-span-2">
                   <h3 className="mb-4 font-semibold text-gray-800">Password Recovery Questions</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-semibold text-gray-700">
-                        Security Question 1
-                      </label>
-                      <input
-                        type="text"
-                        name="securityQuestion1"
-                        required
-                        placeholder="e.g. What is the name of your first pet?"
-                        className={INPUT_CLS}
-                      />
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 1</label>
+                      <input type="text" name="securityQuestion1" required
+                        placeholder="e.g. What is the name of your first pet?" className={INPUT_CLS} />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 1</label>
-                      <input
-                        type="text"
-                        name="securityAnswer1"
-                        required
-                        placeholder="Your answer"
-                        className={INPUT_CLS}
-                      />
+                      <input type="text" name="securityAnswer1" required placeholder="Your answer" className={INPUT_CLS} />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-semibold text-gray-700">
-                        Security Question 2
-                      </label>
-                      <input
-                        type="text"
-                        name="securityQuestion2"
-                        required
-                        placeholder="e.g. In what city were you born?"
-                        className={INPUT_CLS}
-                      />
+                      <label className="mb-1 block text-sm font-semibold text-gray-700">Security Question 2</label>
+                      <input type="text" name="securityQuestion2" required
+                        placeholder="e.g. In what city were you born?" className={INPUT_CLS} />
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-semibold text-gray-700">Answer 2</label>
-                      <input
-                        type="text"
-                        name="securityAnswer2"
-                        required
-                        placeholder="Your answer"
-                        className={INPUT_CLS}
-                      />
+                      <input type="text" name="securityAnswer2" required placeholder="Your answer" className={INPUT_CLS} />
                     </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* ── 2. Personal Information ──────────────────────────────────── */}
+            {/* ── 2. Personal Information ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
                 Personal Information
@@ -268,12 +278,6 @@ export default function RegisterCaregiver() {
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Gender</label>
-                  {/*
-                    Values MUST be "Male" / "Female" (title-case).
-                    The matching algorithm: AND cp.gender = ?
-                    where ? = request.gender_preference which the client sends
-                    as "Male" or "Female". Lowercase breaks matching entirely.
-                  */}
                   <select name="gender" required className={INPUT_CLS}>
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -281,33 +285,42 @@ export default function RegisterCaregiver() {
                   </select>
                 </div>
 
+                {/* ── Date of Birth ── */}
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Date of Birth</label>
+
                   <input
-                    type="date"
+                    type="hidden"
                     name="date_of_birth"
-                    required
-                    max="9999-12-31"
-                    value={dob}
-                    onChange={handleDobChange}
-                    className={INPUT_CLS}
+                    value={selectedDate ? formatDateDDMMYYYY(selectedDate) : ""}
+                  />
+
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date: Date | null) => handleDateSelect(date)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="DD/MM/YYYY"
+                    maxDate={new Date()}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    customInput={
+                      <DateInput
+                        placeholder="DD/MM/YYYY"
+                        onChange={handleDateRawChange}
+                      />
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-semibold text-gray-700">
-                    Age (auto-calculated)
-                  </label>
-                  {/*
-                    Read-only — derived from the DOB field above.
-                    Backend recalculates it server-side via calculateAge() anyway.
-                  */}
+                  <label className="mb-1 block text-sm font-semibold text-gray-700">Age (auto-calculated)</label>
                   <input
                     type="number"
                     name="age"
                     required
                     readOnly
-                    value={age}
+                    value={calculatedAge}
                     className="w-full cursor-not-allowed rounded-xl border-2 border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-900 focus:outline-none"
                   />
                 </div>
@@ -330,18 +343,13 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* ── 3. Location ──────────────────────────────────────────────── */}
+            {/* ── 3. Location ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">Location</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">City</label>
-                  {/*
-                    City values must be capitalized ("Cairo"/"Giza"/"Alexandria")
-                    to match client_profiles city values.
-                    Matching: WHERE cp.city = ? where ? = request.city from client profile.
-                  */}
                   <select
                     name="city"
                     required
@@ -358,12 +366,7 @@ export default function RegisterCaregiver() {
 
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-gray-700">Area</label>
-                  <select
-                    name="area"
-                    required
-                    disabled={!selectedCity}
-                    className={`${INPUT_CLS} disabled:bg-gray-100`}
-                  >
+                  <select name="area" required disabled={!selectedCity} className={`${INPUT_CLS} disabled:bg-gray-100`}>
                     <option value="">Select Area</option>
                     {selectedCity === "Cairo" && (<>
                       <option value="Nasr City">Nasr City</option>
@@ -408,31 +411,24 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* ── 4. Skills & Experience ───────────────────────────────────── */}
+            {/* ── 4. Skills & Experience ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
                 Skills & Experience
               </h2>
               <div className="rounded-xl border-2 border-gray-300 bg-white p-4">
-                {/*
-                  Skills are sent as repeated multipart fields named "skills".
-                  Multer parses them into an array on the backend automatically.
-                  The backend then does JSON.stringify(skills) before inserting.
-                  Values must match the skill keys used in the matching algorithm:
-                    JSON_OVERLAPS(cp.skills, ?)
-                */}
                 <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500">
                   Select all that apply (at least one required)
                 </p>
                 <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[
-                    { value: "physical_care",         label: "Physical care"              },
-                    { value: "medication_management", label: "Medication management"      },
-                    { value: "meal_preparation",      label: "Meal preparation"           },
-                    { value: "housekeeping",          label: "Housekeeping and cleaning"  },
-                    { value: "emotional_support",     label: "Emotional support"          },
-                    { value: "transportation",        label: "Transportation"             },
-                    { value: "health_monitoring",     label: "Health monitoring"          },
+                    { value: "physical_care",         label: "Physical care"             },
+                    { value: "medication_management", label: "Medication management"     },
+                    { value: "meal_preparation",      label: "Meal preparation"          },
+                    { value: "housekeeping",          label: "Housekeeping and cleaning" },
+                    { value: "emotional_support",     label: "Emotional support"         },
+                    { value: "transportation",        label: "Transportation"            },
+                    { value: "health_monitoring",     label: "Health monitoring"         },
                   ].map(({ value, label }) => (
                     <label key={value} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
                       <input
@@ -445,7 +441,6 @@ export default function RegisterCaregiver() {
                     </label>
                   ))}
                 </div>
-
                 <div className="border-t-2 border-gray-100 pt-4">
                   <label className="mb-1 block text-sm font-semibold text-gray-700">
                     Medical Specialties (Conditions / Disabilities You Have Experience With)
@@ -460,29 +455,18 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* ── 5. Verification Documents ────────────────────────────────── */}
+            {/* ── 5. Verification Documents ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
                 Verification Documents
               </h2>
-              {/*
-                File field names MUST exactly match the backend multer config:
-                  upload.fields([
-                    { name: "education_docs",  maxCount: 1 },
-                    { name: "certificates",    maxCount: 1 },
-                    { name: "national_id",     maxCount: 1 },
-                    { name: "criminal_record", maxCount: 1 },
-                    { name: "references",      maxCount: 1 },
-                  ])
-                Files are stored in uploads/caregivers/ by the multer middleware.
-              */}
               <div className="grid grid-cols-1 gap-4 rounded-xl border-2 border-emerald-200 bg-emerald-50/30 p-4 md:grid-cols-2 lg:grid-cols-3">
                 {[
-                  { label: "High School / Higher Education",    name: "education_docs",  required: true  },
-                  { label: "Caregiving / First Aid Certificate", name: "certificates",   required: true  },
-                  { label: "National ID",                        name: "national_id",    required: true  },
-                  { label: "Criminal Record",                    name: "criminal_record", required: true },
-                  { label: "Past References (Optional)",         name: "references",     required: false },
+                  { label: "High School / Higher Education",     name: "education_docs",  required: true  },
+                  { label: "Caregiving / First Aid Certificate", name: "certificates",    required: true  },
+                  { label: "National ID",                        name: "national_id",     required: true  },
+                  { label: "Criminal Record",                    name: "criminal_record", required: true  },
+                  { label: "Past References (Optional)",         name: "references",      required: false },
                 ].map(({ label, name, required }) => (
                   <div key={name}>
                     <label className="mb-1 block text-xs font-semibold text-gray-700">{label}</label>
@@ -498,17 +482,11 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* ── 6. Accepted Salaries ─────────────────────────────────────── */}
+            {/* ── 6. Accepted Salaries ── */}
             <section>
               <h2 className="mb-4 border-b pb-2 text-lg font-bold text-emerald-800">
                 Accepted Salaries Per Day
               </h2>
-              {/*
-                Field names: day_rate_a / day_rate_b / day_rate_c / day_rate_d
-                These feed the matching algorithm's CASE statement:
-                  WHEN 'A' THEN cp.day_rate_a BETWEEN min_compensation AND max_compensation
-                A wrong field name here would silently break caregiver matching.
-              */}
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 {[
                   { label: "Category A (3h)",  name: "day_rate_a" },
@@ -535,7 +513,7 @@ export default function RegisterCaregiver() {
               </div>
             </section>
 
-            {/* ── Submit ───────────────────────────────────────────────────── */}
+            {/* ── Submit ── */}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -548,17 +526,11 @@ export default function RegisterCaregiver() {
           <div className="mt-8 flex flex-col items-center gap-2 text-sm text-gray-600">
             <div>
               Already have an account?{" "}
-              <Link
-                to="/login"
-                className="font-semibold text-emerald-600 transition-colors hover:text-emerald-800 hover:underline"
-              >
+              <Link to="/login" className="font-semibold text-emerald-600 transition-colors hover:text-emerald-800 hover:underline">
                 Sign In
               </Link>
             </div>
-            <Link
-              to="/"
-              className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline"
-            >
+            <Link to="/" className="mt-2 font-semibold text-gray-500 transition-colors hover:text-gray-800 hover:underline">
               Back to Home
             </Link>
           </div>
