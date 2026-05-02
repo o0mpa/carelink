@@ -528,7 +528,7 @@ export default function ClientRequests() {
                 <div className="flex flex-col gap-3">
                   <Link
                     to={paymentUrl}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976D2] to-[#26C6DA] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#1976D2] to-[#26C6DA] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
                   >
                     <svg
                       className="h-4 w-4"
@@ -598,7 +598,7 @@ export default function ClientRequests() {
                 <div className="flex flex-col gap-3">
                   <Link
                     to={paymentUrl}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976D2] to-[#26C6DA] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#1976D2] to-[#26C6DA] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
                   >
                     <svg
                       className="h-4 w-4"
