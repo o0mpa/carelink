@@ -3,7 +3,7 @@ import {authMiddleware} from '../middleware/authMiddleware.js';
 import { 
     createRequest, matchCaregivers, getIncomingRequests, acceptRequest, declineRequest,
     getCaregiverAvailability, getClientRequests, getRequestDetailsForCaregiver, markServiceCompleted,
-    verifyChatAccess, getCurrentRequest
+    verifyChatAccess, getChatMessages, getCurrentRequest
 } from '../controllers/requestController.js';
 
 const router = express.Router();
@@ -40,5 +40,8 @@ router.post('/:requestId/complete', authMiddleware(['Client']), markServiceCompl
 
 //verifying chat access before a chat window is opened (client or assigned caregiver)
 router.get('/:requestId/chat-access', authMiddleware(['Client', 'Caregiver']), verifyChatAccess);
+
+// persisted messages for this request (same auth as chat-access)
+router.get('/:requestId/messages', authMiddleware(['Client', 'Caregiver']), getChatMessages);
 
 export default router;

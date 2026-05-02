@@ -93,6 +93,32 @@ export default function ChatUI() {
         if (cancelled) return;
         setOtherUserId(other);
 
+        try {
+          const { data: hist } = await axiosInstance.get<{
+            messages?: Array<{
+              message_id: number;
+              sender_user_id: number;
+              receiver_user_id: number;
+              message: string;
+              created_at: string;
+            }>;
+          }>(`/requests/${requestId}/messages`);
+          if (!cancelled) {
+            const rows = hist?.messages ?? [];
+            setMessages(
+              rows.map((m) => ({
+                id: String(m.message_id),
+                senderId: m.sender_user_id,
+                receiverId: m.receiver_user_id,
+                message: m.message,
+                timestamp: new Date(m.created_at).getTime(),
+              })),
+            );
+          }
+        } catch {
+          if (!cancelled) setMessages([]);
+        }
+
         const socketUrl = getSocketUrl();
         const socket = io(socketUrl, {
           transports: ["websocket", "polling"],

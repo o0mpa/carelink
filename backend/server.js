@@ -15,6 +15,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 
 import fs from 'fs';
+import db from './src/config/db.js';
 
 const uploadDirs = [
     'uploads/caregivers',
@@ -75,7 +76,22 @@ io.on('connection', (socket) => {
     // If allowed, it gets the otherUserId — then uses that as data.receiverId here.
     //
     // data: { senderId, receiverId, message, requestId }
-    socket.on('sendMessage', (data) => {
+    socket.on('sendMessage', async (data) => {
+        try {
+            const rid = data?.requestId;
+            const sid = data?.senderId;
+            const ridRecv = data?.receiverId;
+            const text = data?.message;
+            if (rid != null && sid != null && ridRecv != null && text != null && String(text).trim()) {
+                await db.promise().query(
+                    `INSERT INTO chat_messages (request_id, sender_user_id, receiver_user_id, message)
+                     VALUES (?, ?, ?, ?)`,
+                    [rid, sid, ridRecv, String(text).trim()]
+                );
+            }
+        } catch (e) {
+            console.error('chat_messages insert failed (did you run migrations/001_chat_messages.sql?):', e.message);
+        }
         const receiverSocketId = onlineUsers.get(String(data.receiverId));
         if (receiverSocketId) {
             io.to(receiverSocketId).emit('receiveMessage', data);

@@ -284,6 +284,7 @@ export const getCurrentRequest = async (req, res) => {
         const clientId = clients[0].client_id;
         const [requests] = await db.promise().query(
             `SELECT cr.request_id, cr.care_category, cr.service_type, cr.day_category,
+            cr.gender_preference, cr.medical_specialties_needed,
             cr.min_compensation, cr.max_compensation, cr.start_date, cr.end_date,
             cr.skills_needed, cr.city, cr.area, cr.status, rc.caregiver_id,
             cp.full_name AS caregiver_name, cp.phone_number AS caregiver_phone,
@@ -408,6 +409,43 @@ export const verifyChatAccess = async (req, res) => {
         //return the other party's userId so the frontend knows who to address messages to
         const otherUserId = isClient ? request.caregiver_user_id : request.client_user_id;
         res.json({allowed: true, requestId, otherUserId});
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+};
+
+// persisted chat history for a request (same access rules as verifyChatAccess)
+export const getChatMessages = async (req, res) => {
+    try {
+        const {requestId} = req.params;
+        const userId = req.user.id;
+        const role = req.user.role;
+        const [requests] = await db.promise().query(
+            `SELECT cr.request_id, cr.status, cr.client_id,
+            cb.caregiver_id, cp_client.user_id AS client_user_id, cp_caregiver.user_id AS caregiver_user_id
+            FROM care_requests cr
+            LEFT JOIN caregiver_bookings cb ON cr.request_id = cb.request_id
+            LEFT JOIN client_profiles cp_client ON cr.client_id = cp_client.client_id
+            LEFT JOIN caregiver_profiles cp_caregiver ON cb.caregiver_id = cp_caregiver.caregiver_id
+            WHERE cr.request_id = ?`,
+            [requestId]
+        );
+        if (requests.length === 0) return res.status(404).json({message: 'Request Not Found'});
+        const request = requests[0];
+        if (!['Accepted', 'Completed', 'Paid'].includes(request.status)) {
+            return res.status(403).json({message: 'Chat Is Only Available After A Request Is Accepted'});
+        }
+        const isClient = role === 'Client' && request.client_user_id === userId;
+        const isCaregiver = role === 'Caregiver' && request.caregiver_user_id === userId;
+        if (!isClient && !isCaregiver) {
+            return res.status(403).json({message: 'You Are Not Part Of This Request'});
+        }
+        const [rows] = await db.promise().query(
+            `SELECT message_id, request_id, sender_user_id, receiver_user_id, message, created_at
+            FROM chat_messages WHERE request_id = ? ORDER BY created_at ASC, message_id ASC`,
+            [requestId]
+        );
+        res.json({messages: rows});
     } catch (error) {
         res.status(500).json({error: error.message});
     }
