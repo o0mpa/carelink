@@ -38,7 +38,7 @@ router.get('/clients/requests', authMiddleware(['Client']), getClientRequests);
 //marking a service as completed
 router.post('/:requestId/complete', authMiddleware(['Client']), markServiceCompleted);
 
-//verifying chat access before a chat window is opened
-router.get('/:requestId/chat-access', authMiddleware(['Caregiver', 'Caregiver']), verifyChatAccess);
+//verifying chat access before a chat window is opened (client or assigned caregiver)
+router.get('/:requestId/chat-access', authMiddleware(['Client', 'Caregiver']), verifyChatAccess);
 
 export default router;

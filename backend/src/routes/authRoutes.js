@@ -31,7 +31,7 @@ router.post("/forgot-password-security", authMiddleware(['Client', 'Caregiver'])
 
 
 //verify token route:
-router.get('/verify', authMiddleware, (req, res) => {
+router.get('/verify', authMiddleware(), (req, res) => {
     res.json({user: req.user});
 });
 

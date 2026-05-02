@@ -152,7 +152,7 @@ export default function EmergencyAlert() {
                   <button
                     onClick={handleTrigger}
                     disabled={status !== "idle"}
-                    className="btn-press relative z-10 flex h-44 w-44 flex-col items-center justify-center rounded-full bg-red-600 text-white shadow-2xl ring-4 ring-red-200 transition-all duration-200 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-80"
+                    className="btn-press relative z-10 flex h-44 w-44 flex-col items-center justify-center rounded-full bg-red-600 text-white shadow-2xl ring-4 ring-red-200 transition-all duration-200 hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-80"
                     aria-label="Trigger emergency alert"
                   >
                     {status === "idle" && (

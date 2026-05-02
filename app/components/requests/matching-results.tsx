@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { apiUrl } from "~/utils/api";
 import { getAuthHeaders } from "~/utils/auth";
 
@@ -39,8 +39,8 @@ type RequestShape = {
 const DAY_CATEGORY_LABEL: Record<string, string> = {
   A: "3 Hours",
   B: "6 Hours",
-  C: "12 Hours",
-  D: "24 Hours",
+  C: "9 Hours",
+  D: "12 Hours",
 };
 
 const dayRateByCategory = (caregiver: Caregiver, dayCategory?: string) => {
@@ -63,13 +63,11 @@ const parseSkills = (skills: Caregiver["skills"]): string[] => {
 };
 
 export default function MatchingResults() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestId = searchParams.get("requestId");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [submittingCaregiverId, setSubmittingCaregiverId] = useState<number | null>(null);
   const [requestData, setRequestData] = useState<RequestShape | null>(null);
   const [matchedCaregivers, setMatchedCaregivers] = useState<Caregiver[]>([]);
 
@@ -117,15 +115,6 @@ export default function MatchingResults() {
     return DAY_CATEGORY_LABEL[dayCategory] ?? "Not specified";
   }, [requestData]);
 
-  const handleConfirm = async (caregiver: Caregiver) => {
-    if (!requestData?.request_id) return;
-    setSubmittingCaregiverId(caregiver.caregiver_id);
-    // Backend currently supports creating/matching requests and caregiver accept/decline flow,
-    // but does not expose a "select matched caregiver" endpoint.
-    navigate(`/requests/client?requestId=${requestData.request_id}`);
-    setSubmittingCaregiverId(null);
-  };
-
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100 py-12">
       <main className="container mx-auto px-4 sm:px-6 md:px-10">
@@ -140,12 +129,20 @@ export default function MatchingResults() {
                 We found <span className="font-bold text-blue-600">{matchedCaregivers.length}</span> caregivers available in your area who match your medical requirements.
               </p>
             </div>
-            <Link
-              to="/request-care"
-              className="rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
-            >
-              Modify Search
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/requests/client"
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow transition-colors hover:bg-blue-700"
+              >
+                Track my request
+              </Link>
+              <Link
+                to="/request-care"
+                className="rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
+              >
+                Modify Search
+              </Link>
+            </div>
           </div>
 
           {error && (
@@ -163,6 +160,13 @@ export default function MatchingResults() {
           {/* Caregiver Cards List */}
           {!loading && !error && (
             <div className="flex flex-col gap-6">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm font-semibold text-blue-900">
+                These caregivers are matched to your request. They see it in{" "}
+                <span className="font-bold">Incoming requests</span> and may accept
+                or decline. You do not pick a single caregiver here—the first
+                acceptance locks in your caregiver. Use{" "}
+                <span className="font-bold">Track my request</span> for status.
+              </div>
               {matchedCaregivers.map((caregiver) => {
                 const skills = parseSkills(caregiver.skills);
                 const rate = dayRateByCategory(caregiver, requestData?.day_category);
@@ -215,21 +219,11 @@ export default function MatchingResults() {
 
                 {/* Action Column */}
                 <div className="flex shrink-0 flex-col items-start justify-center border-t-2 border-gray-100 pt-4 sm:items-end sm:border-l-2 sm:border-t-0 sm:pl-6 sm:pt-0">
-                  <p className="mb-4 text-lg font-black text-emerald-700">
+                  <p className="mb-2 text-lg font-black text-emerald-700">
                     {rate ? `E£ ${rate} / ${durationLabel}` : "Rate unavailable"}
                   </p>
-                  
-                  <button
-                    type="button"
-                    onClick={() => void handleConfirm(caregiver)}
-                    disabled={submittingCaregiverId === caregiver.caregiver_id}
-                    className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white shadow-md transition-all hover:scale-[1.02] hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-70 sm:w-auto"
-                  >
-                    {submittingCaregiverId === caregiver.caregiver_id ? "Confirming..." : "Confirm Caregiver"}
-                  </button>
-                  
-                  <span className="mt-3 w-full text-center text-sm font-semibold text-gray-500 sm:text-right">
-                    Your request remains pending until a caregiver accepts.
+                  <span className="w-full text-center text-xs font-semibold text-gray-500 sm:text-right">
+                    Pending until a matched caregiver accepts.
                   </span>
                 </div>
               </div>

@@ -23,11 +23,9 @@ const SKILLS_LIST = [
   { value: "health_monitoring", label: "Health monitoring" },
 ];
 
-const formatDateDDMMYYYY = (date: Date): string => {
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const yyyy = date.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+const formatDateYYYYMMDD = (date: Date): string => {
+  // Backend expects ISO date (YYYY-MM-DD)
+  return date.toISOString().split("T")[0];
 };
 
 const parseDDMMYYYY = (value: string): Date | null => {
@@ -124,15 +122,15 @@ export default function RequestForm() {
 
     const formData = new FormData(e.currentTarget);
 
-    const startDateStr = startDate ? formatDateDDMMYYYY(startDate) : "";
-    const endDateStr   = endDate   ? formatDateDDMMYYYY(endDate)   : "";
+    const startDateStr = startDate ? formatDateYYYYMMDD(startDate) : "";
+    const endDateStr = endDate ? formatDateYYYYMMDD(endDate) : "";
 
     const payload = {
-      caregiver_id: targetCaregiverId ? parseInt(targetCaregiverId) : null,
       service_type: formData.get("service_type"),
       day_category: formData.get("day_category"),
       care_category: formData.get("care_category"),
-      gender_preference: formData.get("gender_preference") || null,
+      // Backend matching currently requires a concrete gender value (cp.gender = ?).
+      gender_preference: formData.get("gender_preference"),
       start_date: startDateStr,
       end_date: endDateStr,
       min_compensation: Number(formData.get("min_compensation")),
@@ -153,7 +151,7 @@ export default function RequestForm() {
       return;
     }
 
-    if (payload.end_date < payload.start_date) {
+    if (startDate && endDate && endDate.getTime() < startDate.getTime()) {
       setError("End date cannot be earlier than start date.");
       setSubmitting(false);
       return;
@@ -229,9 +227,12 @@ export default function RequestForm() {
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Service Type</option>
-                    <option value="live_out">Live-out (Category A/B/C)</option>
-                    <option value="live_in">Live-in (Category D)</option>
+                    <option value="live_out">Live-out (Caregiver visits daily)</option>
+                    <option value="live_in">Live-in (Caregiver stays in the client’s home)</option>
                   </select>
+                  <p className="mt-2 text-xs font-semibold text-gray-500">
+                    Live-in vs live-out only determines accommodation (stays vs goes home). Your selected day category (A/B/C/D) determines the shift length.
+                  </p>
                 </div>
 
                 <div>
@@ -271,17 +272,20 @@ export default function RequestForm() {
 
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-bold text-gray-700">
-                    Caregiver Gender Preference (Optional)
+                    Caregiver Gender Preference
                   </label>
                   <select
                     name="gender_preference"
-                    
+                    required
                     className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">No Preference</option>
+                    <option value="">Select Gender</option>
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
                   </select>
+                  <p className="mt-2 text-xs font-semibold text-gray-500">
+                    This is required for matching with the current backend rules.
+                  </p>
                 </div>
 
                 {/* ── Start Date ── */}

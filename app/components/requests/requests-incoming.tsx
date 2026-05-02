@@ -59,8 +59,8 @@ const MONTH_NAMES = [
 const DAY_CATEGORY_LABEL: Record<string, string> = {
     A: "3 Hours",
     B: "6 Hours",
-    C: "12 Hours",
-    D: "24 Hours",
+    C: "9 Hours",
+    D: "12 Hours",
 };
 
 const parseDate = (iso: string) => {
@@ -341,6 +341,7 @@ export default function RequestsPage() {
 
     const [calendarMonth, setCalendarMonth] = useState(today.getMonth() + 1);
     const [calendarYear,  setCalendarYear]  = useState(today.getFullYear());
+    const [acceptedForChatId, setAcceptedForChatId] = useState<number | null>(null);
 
     // ── Fetch ──────────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -461,6 +462,7 @@ export default function RequestsPage() {
             setBookedDates(prev => [...new Set([...prev, ...(data.bookedDates ?? [])])]);
             setRequests(prev => prev.filter(r => r.request_id !== req.request_id));
             setSelectedDetail(null);
+            setAcceptedForChatId(req.request_id);
             // ── END REAL API ─────────────────────────────────────────────────
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to accept request";
@@ -546,6 +548,28 @@ export default function RequestsPage() {
             )}
 
             <main className="relative z-10 mx-auto max-w-7xl px-10 py-6">
+                {acceptedForChatId != null && (
+                    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-bold text-emerald-900">
+                            You accepted request #{acceptedForChatId}. Chat is available with your client.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                to={`/chat/${acceptedForChatId}`}
+                                className="inline-flex justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-center text-sm font-bold text-white shadow hover:bg-emerald-700"
+                            >
+                                Open chat
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => setAcceptedForChatId(null)}
+                                className="rounded-xl border-2 border-emerald-200 bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100/50"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div className="mb-2">
                     <Link
                         to="/dashboard/caregiver"

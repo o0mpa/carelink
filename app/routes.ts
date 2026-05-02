@@ -20,13 +20,15 @@ export default [
   route("profile/caregiver", "components/profile/caregiver-profile.tsx"),
   route("profile/caregiver/edit", "components/profile/edit-caregiver.tsx"), 
   route("dashboard/contact", "components/profile/contact-dashboard.tsx"),
+  route("chat/:requestId", "components/requests/chat.tsx"),
 
+  
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
   route("dashboard/caregiver", "components/requests/caregiver-dashboard.tsx"),
   // emegency 
   route("emergency", "components/profile/emergencyalert.tsx"),
-
+route("reviews/:requestId", "components/profile/reviews.tsx"),
   
   // Request Flow
   route("request-care", "components/requests/request-form.tsx"),
