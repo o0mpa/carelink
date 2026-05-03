@@ -203,7 +203,7 @@ const handlePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     <div className="min-h-screen bg-linear-to-br from-blue-100 via-white to-emerald-100">
       <main className="container mx-auto px-4 py-4 sm:px-6 md:px-10">
         <div className="mx-auto max-w-5xl">
-          <Link to="/dashboard/client" className="inline-flex items-center gap-2 text-sm py-3 font-bold text-blue-500 transition-colors hover:text-blue-900 hover:underline">
+          <Link to="/dashboard/client" className="inline-flex items-center gap-2 text-med py-1 font-bold text-blue-500 transition-colors hover:text-blue-900 hover:underline">
             ← Back to Dashboard
           </Link>
 
