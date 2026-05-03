@@ -22,21 +22,24 @@ export default [
   route("dashboard/contact", "components/profile/contact-dashboard.tsx"),
   route("chat/:requestId", "components/requests/chat.tsx"),
 
-  
+
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
   route("dashboard/caregiver", "components/requests/caregiver-dashboard.tsx"),
+
   // emegency 
   route("emergency", "components/profile/emergencyalert.tsx"),
-route("reviews/:requestId", "components/profile/reviews.tsx"),
-  
+  route("reviews/:requestId", "components/profile/reviews.tsx"),
+  route("report/:requestId", "components/requests/report.tsx"),
+
   // Request Flow
   route("request-care", "components/requests/request-form.tsx"),
   route("match-results", "components/requests/matching-results.tsx"),
-  
+
   // Status Tracking Pages
   route("requests/client", "components/requests/client-requests.tsx"),
   route("requests-incoming", "components/requests/requests-incoming.tsx"),
+
   // Payment Flow
   route("payment/:requestId", "components/payment/payment-form.tsx"),
   route("payment-result", "components/payment/payment-result.tsx"),  

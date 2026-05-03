@@ -100,7 +100,7 @@ export const getReports = async (req, res) => {
         const [reports] = await db.promise().query(
             `SELECT r.report_id, r.issue_text, r.status, r.created_at,
             cr.request_id, cr.care_category, cr.start_date, cr.end_date,
-            cp.full_name AS client_name, cp.phone_number AS client_phone, cp.email AS client_email,
+            cp.full_name AS client_name, cp.phone_number AS client_phone, cp.email AS client_email
             FROM reports r
             JOIN care_requests cr ON r.request_id = cr.request_id
             JOIN client_profiles cp ON r.client_id = cp.client_id
