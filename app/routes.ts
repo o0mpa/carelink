@@ -26,6 +26,7 @@ export default [
   // Dashboards 
   route("dashboard/client", "components/requests/client-dashboard.tsx"),
   route("dashboard/caregiver", "components/requests/caregiver-dashboard.tsx"),
+  route("dashboard/admin", "components/requests/admin-dashboard.tsx"),
 
   // emegency 
   route("emergency", "components/profile/emergencyalert.tsx"),

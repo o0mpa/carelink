@@ -27,11 +27,11 @@ router.post('/logout', /*authenticateToken,*/ logout);
 
 // Password recovery
 router.get('/security-questions/:username', getSecurityQuestions);
-router.post("/forgot-password-security", authMiddleware(['Client', 'Caregiver']), forgotPasswordSecurity);
+router.post("/forgot-password-security", forgotPasswordSecurity);
 
 
 //verify token route:
-router.get('/verify', authMiddleware(), (req, res) => {
+router.get('/verify', authMiddleware(['Client', 'Caregiver']), (req, res) => {
     res.json({user: req.user});
 });
 

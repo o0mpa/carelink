@@ -1,6 +1,7 @@
-import multer from 'multer';
+//import multer from 'multer';
 import db from '../config/db.js'
 import bcrypt from 'bcryptjs';
+import { upload } from '../middleware/uploads.js';
 
 //fetching caregiver profile
 export const getCaregiverProfile = async (req, res) => {
@@ -49,11 +50,14 @@ export const updateCaregiverProfile = async (req, res) => {
 }
 
 //profile picture upload
-const upload = multer({dest: 'uploads/'})
+//const upload = multer({dest: 'uploads/'})
 export const uploadCaregiverPicture = [
     upload.single('picture'),
     async (req, res) => {
         try {
+            if (!req.file) {
+                return res.status(400).json({message: 'No file uploaded. Please select an image.'});
+            }
             const {id} = req.user;
             await db.promise().query(`UPDATE caregiver_profiles SET profile_picture = ? WHERE user_id = ?`, [req.file.path, id]);
             res.status(200).json({message: 'Profile Picture Set Successfully', path: req.file.path});

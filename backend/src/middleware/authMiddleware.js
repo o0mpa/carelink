@@ -22,7 +22,7 @@ export const authMiddleware = (allowedRoles = []) => {
             //attach user and token to request for downstream use
             req.user = decoded;
             req.token = token;
-            return next();
+            next();
         } catch (error) {
             //catch DB errors and jwt.verify failures (expired/invalid signature)
             if (error.name === 'TokenExpiredError') {

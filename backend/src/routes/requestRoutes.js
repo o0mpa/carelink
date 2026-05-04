@@ -3,7 +3,7 @@ import {authMiddleware} from '../middleware/authMiddleware.js';
 import { 
     createRequest, matchCaregivers, getIncomingRequests, acceptRequest, declineRequest,
     getCaregiverAvailability, getClientRequests, getRequestDetailsForCaregiver, markServiceCompleted,
-    verifyChatAccess, getChatMessages, getCurrentRequest
+    verifyChatAccess, getCurrentRequest, getCaregiverCurrentRequest
 } from '../controllers/requestController.js';
 
 const router = express.Router();
@@ -16,6 +16,9 @@ router.get('/:requestId/match', authMiddleware(['Client']), matchCaregivers);
 
 //caregiver views their incoming pending requests
 router.get('/caregivers/incoming', authMiddleware(['Caregiver']), getIncomingRequests);
+
+//caregiver views their current request/service
+router.get('/caregivers/current-request', authMiddleware(['Caregiver']), getCaregiverCurrentRequest);
 
 //caregiver accepts a request
 router.post('/:requestId/accept', authMiddleware(['Caregiver']), acceptRequest);
@@ -35,13 +38,10 @@ router.get('/clients/current-request', authMiddleware(['Client']), getCurrentReq
 //client views requests made before
 router.get('/clients/requests', authMiddleware(['Client']), getClientRequests);
 
-//marking a service as completed
-router.post('/:requestId/complete', authMiddleware(['Client']), markServiceCompleted);
+//marking a service as completed fallback
+router.post('/:requestId/complete', authMiddleware(['Admin']), markServiceCompleted);
 
-//verifying chat access before a chat window is opened (client or assigned caregiver)
+//verifying chat access before a chat window is opened
 router.get('/:requestId/chat-access', authMiddleware(['Client', 'Caregiver']), verifyChatAccess);
-
-// persisted messages for this request (same auth as chat-access)
-router.get('/:requestId/messages', authMiddleware(['Client', 'Caregiver']), getChatMessages);
 
 export default router;

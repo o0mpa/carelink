@@ -16,7 +16,7 @@ export const addcalendarEntry = async (req, res) => {
         //verify the user is part of this request and request is active
         const [rows] = await db.promise().query(
             `SELECT cr.request_id, cr.start_date, cr.end_date, cr.status,
-            cp_client.user_id AS client_user_id, cp_cg.user_id AS caregiver_user_id,
+            cp_client.user_id AS client_user_id, cp_cg.user_id AS caregiver_user_id
             FROM care_requests cr
             LEFT JOIN request_caregivers rc ON cr.request_id = rc.request_id AND rc.response = 'Accepted'
             LEFT JOIN client_profiles cp_client ON cr.client_id = cp_client.client_id
@@ -77,8 +77,8 @@ export const getCalendarEntries = async (req, res) => {
             return res.status(403).json({message: 'Calendar only available for active ongoing requests.'});
         }
         const [entries] = await db.promise().query(
-            `SELECT cr.entry_id, ce.entry_type, ce.title, ce.description,
-            ce.scheduled_at, ce.created_by, u.username AS created_by
+            `SELECT ce.entry_id, ce.entry_type, ce.title, ce.description,
+            ce.scheduled_at, ce.created_at, u.username AS created_by
             FROM calendar_entries ce
             JOIN users u ON ce.creator_user_id = u.user_id
             WHERE ce.request_id = ?

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
+import db from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import requestRoutes from './src/routes/requestRoutes.js';
 import paymentRoutes from './src/routes/paymentRoutes.js';
@@ -15,7 +17,6 @@ import { Server } from 'socket.io';
 import http from 'http';
 
 import fs from 'fs';
-import db from './src/config/db.js';
 
 const uploadDirs = [
     'uploads/caregivers',
@@ -31,6 +32,33 @@ uploadDirs.forEach(dir => {
 
 dotenv.config();
 const app = express();
+
+//a scheduled job that runs every day at midnight 00:00
+//automatically marks any accepted request whode end_date has passed as completed
+// Cron format: '0 0 * * *'
+//   - 0     = minute 0
+//   - 0     = hour 0 (midnight)
+//   - *     = every day of month
+//   - *     = every month
+//   - *     = every day of week
+
+// To test immediately without waiting for midnight, change '0 0 * * *' to '* * * * *'
+// (runs every minute) — then revert back after confirming it works.
+
+cron.schedule('0 0 * * *', async () => {
+    try {
+        const [result] = await db.promise().query(
+            `UPDATE care_requests SET status = 'completed' WHERE status = 'Accepted' AND end_date < CURDATE()`
+        );
+        if (result.affectedRows > 0) {
+            console.log(`[Scheduler] Auto-completed ${result.affectedRows} service(s) at ${new Date().toISOString()}`);
+        }
+    } catch (error) {
+        console.error('[Scheduler] Failed to auto-complete services:', error.message);
+    }
+});
+console.log('[Scheduler] Auto-complete job scheduled — runs daily at midnight.');
+
 
 app.use(cors({
   origin: 'http://localhost:5173', // This is the default port for Vite/React
@@ -76,22 +104,7 @@ io.on('connection', (socket) => {
     // If allowed, it gets the otherUserId — then uses that as data.receiverId here.
     //
     // data: { senderId, receiverId, message, requestId }
-    socket.on('sendMessage', async (data) => {
-        try {
-            const rid = data?.requestId;
-            const sid = data?.senderId;
-            const ridRecv = data?.receiverId;
-            const text = data?.message;
-            if (rid != null && sid != null && ridRecv != null && text != null && String(text).trim()) {
-                await db.promise().query(
-                    `INSERT INTO chat_messages (request_id, sender_user_id, receiver_user_id, message)
-                     VALUES (?, ?, ?, ?)`,
-                    [rid, sid, ridRecv, String(text).trim()]
-                );
-            }
-        } catch (e) {
-            console.error('chat_messages insert failed (did you run migrations/001_chat_messages.sql?):', e.message);
-        }
+    socket.on('sendMessage', (data) => {
         const receiverSocketId = onlineUsers.get(String(data.receiverId));
         if (receiverSocketId) {
             io.to(receiverSocketId).emit('receiveMessage', data);

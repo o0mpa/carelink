@@ -94,10 +94,6 @@ export const submitReport = async (req, res) => {
     try {
         const {requestId, issue_text} = req.body;
         const userId = req.user.id;
-        const rid = parseInt(requestId, 10);
-        if (!Number.isFinite(rid) || rid <= 0) {
-            return res.status(400).json({message: 'Valid Request ID Is Required'});
-        }
         if (!issue_text || issue_text.trim().length === 0) {
             return res.status(400).json({message: 'Issue Description Cannot Be Empty'});
         }
@@ -107,16 +103,16 @@ export const submitReport = async (req, res) => {
         if (clients.length === 0) return res.status(404).json({message: 'Client Profile Not Found'});
         const clientId = clients[0].client_id;
         //confirm request exists and belongs to that client
-        const [rows] = await db.promise().query(
-            `SELECT request_id FROM care_requests WHERE request_id = ? AND client_id = ?`,
-            [rid, clientId]
+        const [request] = await db.promise().query(
+            `SELECT request_id FROM care_requests WHERE request_id = ? and client_id = ?`,
+            [requestId, clientId]
         );
-        if (rows.length === 0) return res.status(404).json({message: 'Request Not Found'});
+        if (request.length === 0) return res.status(404).json({message: 'Request Not Found'});
         //logging report/complaint
         await db.promise().query(
             `INSERT INTO reports (request_id, client_id, issue_text, status)
             VALUES (?, ?, ?, 'Pending')`,
-            [rid, clientId, issue_text.trim()]
+            [requestId, clientId, issue_text.trim()]
         );
         res.status(201).json({message: 'Report submitted. Our team will look into it.'});
     } catch (error) {

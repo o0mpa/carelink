@@ -109,7 +109,7 @@ export const signupCaregiver = async (req, res) => {
       //insert into caregiver profiles + admin approval
       await db.promise().query(
         `INSERT INTO caregiver_profiles (user_id, full_name, gender, date_of_birth, age, city, area, full_address, phone_number, email,
-       education_docs, certificates, national_id, criminal_record, references, skills,
+       education_docs, certificates, national_id, criminal_record, \`references\`, skills,
        day_rate_a, day_rate_b, day_rate_c, day_rate_d, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
        [userId, full_name, gender, date_of_birth, age, city, area, full_address, phone_number, email,
         education_docs, certificates, national_id, criminal_record, references,
@@ -219,11 +219,11 @@ export const forgotPasswordSecurity = async (req, res) => {
     );
     //issue new jwt
     const newToken = jwt.sign(
-      {id: user.user_id, role: user.user_role},
+      {id: user.user_id, role: user.role},
       process.env.JWT_SECRET,
       {expiresIn: '1h'}
     );
-    res.json({nessage: 'Reset Password Successful', token: newToken})
+    res.json({message: 'Reset Password Successful', token: newToken})
   } catch (error) {
     res.status(500).json({error: error.message});
   }

@@ -9,10 +9,10 @@ export const getAllCaregivers = async (req, res) => {
         created_at FROM caregiver_profiles`;
         const params = [];
         if (status) {
-            query += `WHERE approval_status = ?`;
+            query += ` WHERE approval_status = ?`;
             params.push(status);
         }
-        query += `ORDER BY created_at DESC`;
+        query += ` ORDER BY created_at DESC`;
         const [caregivers] = await db.promise().query(query, params);
         res.json({caregivers});
     } catch (error) {
@@ -134,12 +134,12 @@ export const updateReportStatus = async (req, res) => {
 export const getEmergencyAlerts = async (req, res) => {
     try {
         const [alerts] = await db.promise().query(
-            `SELECT ea.alert_id, ea.latitude, ea.longtitude, ea.created_at,
+            `SELECT ea.alert_id, ea.latitude, ea.longitude, ea.created_at,
             ea.status, cp.full_name, cp.phone_number, cp.email, cp.blood_type,
             cp.allergies, cp.diagnoses, cp.conditions, cp.doctor_facility, cp.medical_specialties_required,
             cp.emergency_contact1_name, cp.emergency_contact1_phone, cp.emergency_contact2_name, cp.emergency_contact2_phone
             FROM emergency_alerts ea
-            JOIN client_profiles cp ON ea_client_id = cp.client_id
+            JOIN client_profiles cp ON ea.client_id = cp.client_id
             ORDER BY ea.created_at DESC`
         );
         res.json({alerts});

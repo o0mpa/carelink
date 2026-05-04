@@ -13,6 +13,10 @@ const getDatesInRange = (startDate, endDate) => {
 }
 
 //client creating a new caregiving request
+//one-active-request limit — a client cannot submit a new request
+//while they have one that is Pending, Accepted, or Completed (not yet paid/done).
+//a new request is only allowed once the current one is 'Paid' or 'Declined'.
+// 'Declined' is included because no caregiver was available — they should be able to try again immediately.
 export const createRequest = async (req, res) => {
     try {
         const {service_type, day_category, gender_preference, min_compensation, max_compensation, start_date, 
@@ -23,6 +27,14 @@ export const createRequest = async (req, res) => {
             `SELECT client_id, city, area, skills_needed FROM client_profiles WHERE user_id = ?`, [userId]);
         if (clients.length === 0) return res.status(404).json({message: 'Client Profile Not Found'});
         const {client_id, city, area} = clients[0];
+        //block request if there's already an active request
+        const [active] = await db.promise().query(
+            `SELECT request_id, status, FROM care_requests WHERE client_id = ? AND status IN ('Pending', 'Accepted', 'Completed')
+            LIMIT 1`, [client_id]
+        );
+        if (active.length > 0) {
+            return res.status(400).json({message: `You already have an active request (status: ${active[0].status}). You can submit a new request once your current service is completed and paid.`, activeRequestId: active[0].request_id});
+        }
         //if no skills are selected, fall back on the client profile skills needed
         let finalSkills = skills_needed;
         if (!skills_needed || skills_needed.length === 0) {
@@ -64,8 +76,10 @@ export const matchCaregivers = async (req, res) => {
                 WHEN ? = 'D' THEN cp.day_rate_d BETWEEN ? AND ?
                 END
             AND cp.approval_status = 'Active'
-            AND NOT EXISTS (SELECT 1 FROM caregiver_bookings cb WHERE cb.caregiver_id = cp.caregiver_id 
-            AND cb.booked_date BETWEEN ? AND ?`,
+            AND NOT EXISTS (
+            SELECT 1 FROM caregiver_bookings cb WHERE cb.caregiver_id = cp.caregiver_id
+            AND cb.booked_date BETWEEN ? AND ?
+            )`,
             [request.city, JSON.stringify(request.skills_needed), request.gender_preference, request.day_category, 
                 request.min_compensation, request.max_compensation,
                 request.day_category, request.min_compensation, request.max_compensation,
@@ -273,6 +287,7 @@ export const getCaregiverAvailability= async (req, res) => {
     }
 };
 
+
 //client views their current requests
 export const getCurrentRequest = async (req, res) => {
     try {
@@ -284,7 +299,6 @@ export const getCurrentRequest = async (req, res) => {
         const clientId = clients[0].client_id;
         const [requests] = await db.promise().query(
             `SELECT cr.request_id, cr.care_category, cr.service_type, cr.day_category,
-            cr.gender_preference, cr.medical_specialties_needed,
             cr.min_compensation, cr.max_compensation, cr.start_date, cr.end_date,
             cr.skills_needed, cr.city, cr.area, cr.status, rc.caregiver_id,
             cp.full_name AS caregiver_name, cp.phone_number AS caregiver_phone,
@@ -304,6 +318,43 @@ export const getCurrentRequest = async (req, res) => {
         res.status(500).json({error: error.message});
     }
 };
+
+
+//caregiver get current active request (in caregiver dashboard)
+//the same request status the client sees — keeping both sides in sync.
+//active = any request where this caregiver's response = 'Accepted' and the request is not yet Paid (still ongoing or completed but unpaid)
+export const getCaregiverCurrentRequest = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [caregivers] = await db.promise().query(
+            `SELECT caregiver_id FROM caregiver_profiles where user_id = ?`, userId
+        );
+        if (caregivers.length === 0) return res.status(404).json({message: 'Caregiver Profile Not Found'});
+        const caregiverId = caregivers[0].caregiver_id;
+        //finding the most recent request this caregiver accepted that's still active (accepted/completed)
+        const [requests] = await db.promise().query(
+            `SELECT cr.request_id, cr.care_category, cr.service_type, cr.day_category, cr.min_compensation, cr.max_compensation,
+            cr.start_date, cr.end_date, cr.skills_needed, cr.medical_specialties_needed, cr.city, cr.area, cr.status,
+            cp_client.full_name    AS client_name, cp_client.phone_number AS client_phone,
+            cp_client.email        AS client_email, cp_client.user_id      AS client_user_id,
+            cp_client.blood_type, cp_client.allergies, cp_client.diagnoses, cp_client.conditions,
+            cp_client.doctor_facility, cp_client.medical_specialties_required,
+            cp_client.emergency_contact1_name, cp_client.emergency_contact1_phone,
+            cp_client.emergency_contact2_name, cp_client.emergency_contact2_phone
+            FROM care_requests cr
+            JOIN request_caregivers rc ON cr.request_id = rc.request_id AND rc.caregiver_id = ? AND rc.response = 'Accepted'
+            JOIN client_profiles cp_client ON cr.client_id = cp_client.client_id
+            WHERE cr.status IN ('Accepted', 'Completed')
+            ORDER BY cr.request_id DESC
+            LIMIT 1`, [caregiverId]
+        );
+        if (requests.length === 0) return res.status(404).json({message: 'No Active Requests Found'});
+        res.json({request: requests[0]});
+    } catch (error) {
+        res.status(500).json({error: error.message});
+    }
+};
+
 
 //client views their past requests (completed/paid)
 export const getClientRequests = async (req, res) => {
@@ -334,7 +385,7 @@ export const getClientRequests = async (req, res) => {
     }
 };
 
-//mark a service as completed
+//mark a service as completed (fallback just in case the scheduler fails or for admin intervention)
 export const markServiceCompleted = async (req, res) => {
     try {
         const {requestId} = req.params;
@@ -390,7 +441,7 @@ export const verifyChatAccess = async (req, res) => {
             `SELECT cr.request_id, cr.status, cr.client_id, 
             cb.caregiver_id, cp_client.user_id AS client_user_id, cp_caregiver.user_id AS caregiver_user_id
             FROM care_requests cr
-            LEFT JOIN caregiver_bookings cb ON cr.request_id = cb.request_id
+            LEFT JOIN request_caregivers rc ON cr.request_id = rc.request_id AND rc.response = 'Accepted'
             LEFT JOIN client_profiles cp_client ON cr.client_id = cp_client.client_id
             LEFT JOIN caregiver_profiles cp_caregiver ON cb.caregiver_id = cp_caregiver.caregiver_id
             WHERE cr.request_id = ?`, [requestId]
@@ -409,43 +460,6 @@ export const verifyChatAccess = async (req, res) => {
         //return the other party's userId so the frontend knows who to address messages to
         const otherUserId = isClient ? request.caregiver_user_id : request.client_user_id;
         res.json({allowed: true, requestId, otherUserId});
-    } catch (error) {
-        res.status(500).json({error: error.message});
-    }
-};
-
-// persisted chat history for a request (same access rules as verifyChatAccess)
-export const getChatMessages = async (req, res) => {
-    try {
-        const {requestId} = req.params;
-        const userId = req.user.id;
-        const role = req.user.role;
-        const [requests] = await db.promise().query(
-            `SELECT cr.request_id, cr.status, cr.client_id,
-            cb.caregiver_id, cp_client.user_id AS client_user_id, cp_caregiver.user_id AS caregiver_user_id
-            FROM care_requests cr
-            LEFT JOIN caregiver_bookings cb ON cr.request_id = cb.request_id
-            LEFT JOIN client_profiles cp_client ON cr.client_id = cp_client.client_id
-            LEFT JOIN caregiver_profiles cp_caregiver ON cb.caregiver_id = cp_caregiver.caregiver_id
-            WHERE cr.request_id = ?`,
-            [requestId]
-        );
-        if (requests.length === 0) return res.status(404).json({message: 'Request Not Found'});
-        const request = requests[0];
-        if (!['Accepted', 'Completed', 'Paid'].includes(request.status)) {
-            return res.status(403).json({message: 'Chat Is Only Available After A Request Is Accepted'});
-        }
-        const isClient = role === 'Client' && request.client_user_id === userId;
-        const isCaregiver = role === 'Caregiver' && request.caregiver_user_id === userId;
-        if (!isClient && !isCaregiver) {
-            return res.status(403).json({message: 'You Are Not Part Of This Request'});
-        }
-        const [rows] = await db.promise().query(
-            `SELECT message_id, request_id, sender_user_id, receiver_user_id, message, created_at
-            FROM chat_messages WHERE request_id = ? ORDER BY created_at ASC, message_id ASC`,
-            [requestId]
-        );
-        res.json({messages: rows});
     } catch (error) {
         res.status(500).json({error: error.message});
     }

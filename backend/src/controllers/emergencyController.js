@@ -12,14 +12,14 @@ const transporter = nodemailer.createTransport({
 });
 
 //reverse geocoding → GPS coordinates → human readable address (falls back to raw coordinates if it fails)
-const getReadableAddress = async (latitude, longtitude) => {
+const getReadableAddress = async (latitude, longitude) => {
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
         const response = await fetch(url, {
             headers: {'User-Agent': 'CareLink Emergency System'}
         });
         const data = await response.json();
-        return data.display_name || `${latitude}, ${longtitude}`
+        return data.display_name || `${latitude}, ${longitude}`
     } catch (error) {
         return `${latitude}, ${longitude}`;
     }
@@ -41,7 +41,7 @@ export const triggerEmergencyAlert = async (req, res) => {
         const {latitude, longitude} = req.body;
         const userId = req.user.id;
         if (!latitude || !longitude) {
-            return res.status(400).json({message: 'Location (latitude and longtitude) is required.'});
+            return res.status(400).json({message: 'Location (latitude and longitude) is required.'});
         }
         const [clients] = await db.promise().query(
             `SELECT client_id, full_name, phone_number, email, blood_type, allergies,
@@ -56,7 +56,7 @@ export const triggerEmergencyAlert = async (req, res) => {
         const mapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         //save alert to database - admin panel reads from this table
         await db.promise().query(
-            `INSERT INTO emergency_alerts (client_id, latitude, logntitude, readable_address, status)
+            `INSERT INTO emergency_alerts (client_id, latitude, lognitude, readable_address, status)
             VALUES (?, ?, ?, ?, 'Active')`, [client.client_id, latitude, longitude, readableAddress]
         );
         //building a health profile message - alert content
