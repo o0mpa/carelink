@@ -24,6 +24,14 @@ type Message = {
   timestamp: number;
 };
 
+type ChatHistoryRow = {
+  message_id: number;
+  sender_user_id: number;
+  receiver_user_id: number;
+  message: string;
+  created_at: string;
+};
+
 const formatTime = (ts: number) =>
   new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -38,6 +46,7 @@ export default function ChatUI() {
   const { requestId: requestIdParam } = useParams();
   const navigate = useNavigate();
   const requestId = requestIdParam ?? "";
+  const numericRequestId = Number(requestId);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -50,6 +59,38 @@ export default function ChatUI() {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const resolveOtherUserIdFallback = useCallback(
+    async (role: string | null): Promise<number | null> => {
+      try {
+        if (role === "Client") {
+          const { data } = await axiosInstance.get<{
+            requests?: { request_id?: number; caregiver_user_id?: number | null };
+          }>("/requests/clients/current-request");
+          const req = data?.requests;
+          if (req?.request_id === numericRequestId && req?.caregiver_user_id != null) {
+            return req.caregiver_user_id;
+          }
+          return null;
+        }
+
+        if (role === "Caregiver") {
+          const { data } = await axiosInstance.get<{
+            request?: { request_id?: number; client_user_id?: number | null };
+          }>("/requests/caregivers/current-request");
+          const req = data?.request;
+          if (req?.request_id === numericRequestId && req?.client_user_id != null) {
+            return req.client_user_id;
+          }
+          return null;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    },
+    [numericRequestId],
+  );
+
   const goToDashboard = useCallback(() => {
     const role = getRole();
     if (role === "Caregiver") navigate("/dashboard/caregiver");
@@ -61,8 +102,8 @@ export default function ChatUI() {
   }, [messages]);
 
   useEffect(() => {
-    if (!requestId) {
-      setError("Missing request ID.");
+    if (!requestId || !Number.isFinite(numericRequestId) || numericRequestId <= 0) {
+      setError("Invalid request ID.");
       setLoading(false);
       return;
     }
@@ -81,28 +122,27 @@ export default function ChatUI() {
         if (cancelled) return;
         setMyUserId(me);
 
-        const { data: accessData } = await axiosInstance.get<{
-          otherUserId?: number;
-          allowed?: boolean;
-        }>(`/requests/${requestId}/chat-access`);
-
-        const other = accessData?.otherUserId;
-        if (other == null) {
-          throw new Error("Could not resolve the other participant for this request.");
+        const role = getRole();
+        let other: number | null = null;
+        try {
+          const { data: accessData } = await axiosInstance.get<{
+            otherUserId?: number;
+            allowed?: boolean;
+          }>(`/requests/${numericRequestId}/chat-access`);
+          other = accessData?.otherUserId ?? null;
+        } catch {
+          // Fallback for backend variants where chat-access is temporarily unavailable.
+          other = await resolveOtherUserIdFallback(role);
         }
+
+        if (other == null) throw new Error("Could not resolve the other participant for this request.");
         if (cancelled) return;
         setOtherUserId(other);
 
         try {
           const { data: hist } = await axiosInstance.get<{
-            messages?: Array<{
-              message_id: number;
-              sender_user_id: number;
-              receiver_user_id: number;
-              message: string;
-              created_at: string;
-            }>;
-          }>(`/requests/${requestId}/messages`);
+            messages?: ChatHistoryRow[];
+          }>(`/requests/${numericRequestId}/messages`);
           if (!cancelled) {
             const rows = hist?.messages ?? [];
             setMessages(
@@ -171,10 +211,16 @@ export default function ChatUI() {
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, [requestId, navigate]);
+  }, [requestId, numericRequestId, navigate, resolveOtherUserIdFallback]);
 
   const sendMessage = useCallback(() => {
-    if (!newMessage.trim() || !socketRef.current || !myUserId || !otherUserId || !requestId) {
+    if (
+      !newMessage.trim() ||
+      !socketRef.current ||
+      !myUserId ||
+      !otherUserId ||
+      !Number.isFinite(numericRequestId)
+    ) {
       return;
     }
 
@@ -182,7 +228,7 @@ export default function ChatUI() {
       senderId: myUserId,
       receiverId: otherUserId,
       message: newMessage.trim(),
-      requestId: Number(requestId),
+      requestId: numericRequestId,
     };
 
     socketRef.current.emit("sendMessage", messageData);
@@ -196,7 +242,7 @@ export default function ChatUI() {
       },
     ]);
     setNewMessage("");
-  }, [newMessage, myUserId, otherUserId, requestId]);
+  }, [newMessage, myUserId, otherUserId, numericRequestId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

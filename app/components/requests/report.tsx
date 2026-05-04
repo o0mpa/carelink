@@ -27,6 +27,8 @@ export default function ReportIssue() {
     const n = parseInt(requestIdParam ?? "", 10);
     return Number.isFinite(n) && n > 0 ? n : NaN;
   }, [requestIdParam]);
+  const role = getRole();
+  const isClient = role === "Client";
 
   const [issueText, setIssueText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -62,7 +64,7 @@ export default function ReportIssue() {
       setSubmitted(true);
     } catch (err: unknown) {
       const ax = err as {
-        response?: { status?: number; data?: { message?: string } };
+        response?: { status?: number; data?: { message?: string; error?: string } };
         message?: string;
       };
       if (ax.response?.status === 401) {
@@ -71,6 +73,7 @@ export default function ReportIssue() {
       }
       setError(
         ax.response?.data?.message ||
+          ax.response?.data?.error ||
           ax.message ||
           "Failed to submit report. Please try again.",
       );
@@ -84,6 +87,24 @@ export default function ReportIssue() {
       <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl ring-1 ring-slate-200">
           <p className="font-semibold text-slate-700">This report link is invalid.</p>
+          <Link
+            to={dashboardPath()}
+            className="mt-6 inline-block rounded-xl bg-slate-800 px-6 py-3 text-sm font-bold text-white hover:bg-slate-900"
+          >
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isClient && !submitted) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl ring-1 ring-slate-200">
+          <p className="font-semibold text-slate-700">
+            Reporting is currently available for client accounts only.
+          </p>
           <Link
             to={dashboardPath()}
             className="mt-6 inline-block rounded-xl bg-slate-800 px-6 py-3 text-sm font-bold text-white hover:bg-slate-900"
